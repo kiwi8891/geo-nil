@@ -1,0 +1,124 @@
+
+/* ---------------- dibujo del mapa ---------------- */
+var HIT = {1:{rio:26, pin:30, }, 2:{rio:19, pin:24}, 3:{rio:13, pin:17}};
+
+function dibujarMapa(bloque, activos){
+  /* activos = ids (tipo:id) que son tocables esta ronda */
+  var lv = S.nivel[bloque];
+  var h = HIT[lv] || HIT[3];
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(NS,"svg");
+  svg.setAttribute("viewBox","0 0 "+MAPA.W+" "+MAPA.H);
+  svg.setAttribute("class","mapa");
+  svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+
+  /* Los vecinos se dibujan un poco fuera del marco a propósito (para que la costa
+     no acabe en seco). Sin este recorte se salen del mapa y se ven bandas grises. */
+  var defs=document.createElementNS(NS,"defs");
+  var cp=document.createElementNS(NS,"clipPath"); cp.setAttribute("id","marco");
+  var cr=document.createElementNS(NS,"rect");
+  cr.setAttribute("width",MAPA.W); cr.setAttribute("height",MAPA.H);
+  cp.appendChild(cr); defs.appendChild(cp); svg.appendChild(defs);
+  var raiz=document.createElementNS(NS,"g");
+  raiz.setAttribute("clip-path","url(#marco)"); svg.appendChild(raiz);
+
+  function nodo(t,attrs){
+    var e=document.createElementNS(NS,t);
+    for(var k in attrs) e.setAttribute(k, attrs[k]);
+    raiz.appendChild(e); return e;
+  }
+  /* mar */
+  nodo("rect",{width:MAPA.W, height:MAPA.H, fill:"#cfe4f2"});
+  /* vecinos */
+  for(var i=0;i<MAPA.vec.length;i++)
+    nodo("path",{d:MAPA.vec[i].d, fill:"#e3e0d6", stroke:"#c9c4b3", "stroke-width":1});
+  /* panel opaco del recuadro canario */
+  var ci=MAPA.canario;
+  nodo("rect",{x:ci[0], y:ci[1], width:ci[2], height:ci[3], fill:"#cfe4f2"});
+  /* comunidades (siempre de fondo) */
+  var refs={};   /* id -> nodo visible, para poder resaltarlo al responder */
+  for(var i=0;i<MAPA.ccaa.length;i++){
+    var c=MAPA.ccaa[i];
+    var n=nodo("path",{d:c.d, fill:"#f6efdd", stroke:"#b9a87e", "stroke-width":1});
+    if(bloque==="ccaa") refs["ccaa:"+c.id]=n;
+  }
+  nodo("rect",{x:ci[0], y:ci[1], width:ci[2], height:ci[3], fill:"none",
+    stroke:"#8a7a52", "stroke-width":1.5, "stroke-dasharray":"6 4"});
+
+  /* qué se dibuja de cada capa: solo los elementos del nivel (los distractores) */
+  function visible(x){ return x.lv <= lv; }
+
+  /* cordilleras */
+  for(var i=0;i<MAPA.cord.length;i++){
+    var m=MAPA.cord[i];
+    if(bloque==="cord" && !visible(m)) continue;
+    if(bloque!=="cord" && m.lv>1) continue;   /* fuera del bloque, solo las grandes, de adorno */
+    var n=nodo("path",{d:m.d, fill:"#a98b5e", "fill-opacity":bloque==="cord"?0.78:0.4,
+      stroke:"#7a5f36", "stroke-width":1});
+    if(bloque==="cord") refs["cord:"+m.id]=n;
+  }
+  /* ríos */
+  for(var i=0;i<MAPA.rios.length;i++){
+    var r=MAPA.rios[i];
+    if(bloque==="rios" && !visible(r)) continue;
+    if(bloque!=="rios" && r.lv>1) continue;
+    var n=nodo("path",{d:r.d, fill:"none", stroke:"#2f7fc4",
+      "stroke-width":bloque==="rios"?3:2, "stroke-linecap":"round", "stroke-linejoin":"round"});
+    if(bloque==="rios") refs["rio:"+r.id]=n;
+  }
+  /* chinchetas */
+  function pin(p, tipo, color){
+    var g=document.createElementNS(NS,"g");
+    var c1=document.createElementNS(NS,"circle");
+    c1.setAttribute("cx",p.x); c1.setAttribute("cy",p.y); c1.setAttribute("r",7.5);
+    c1.setAttribute("fill",color); c1.setAttribute("stroke","#fff"); c1.setAttribute("stroke-width",2);
+    g.appendChild(c1); raiz.appendChild(g);
+    refs[tipo+":"+p.id]=g;
+    return g;
+  }
+  if(bloque==="costas" || bloque==="ccaa"){
+    for(var i=0;i<MAPA.aguas.length;i++){
+      var a=MAPA.aguas[i];
+      if(bloque!=="costas" || !visible(a)) continue;
+      pin(a,"agua","#1b5e8a");
+    }
+    for(var i=0;i<MAPA.ciudades.length;i++){
+      var c=MAPA.ciudades[i];
+      if(bloque==="costas"){ if(!visible(c)) continue; pin(c,"ciudad","#c0392b"); }
+      else { if(lv<2 || !c.cap || !visible(c)) continue; pin(c,"cap","#c0392b"); }
+    }
+  }
+
+  /* ---- capa de toque, siempre encima ---- */
+  var hits=document.createElementNS(NS,"g"); raiz.appendChild(hits);
+  function hit(tag, attrs, key){
+    var e=document.createElementNS(NS,tag);
+    for(var k in attrs) e.setAttribute(k, attrs[k]);
+    e.setAttribute("class","hit");
+    e.setAttribute("fill-opacity","0"); e.setAttribute("stroke-opacity","0");
+    e.dataset.k=key; hits.appendChild(e);
+  }
+  for(var i=0;i<activos.length;i++){
+    var k=activos[i], t=k.split(":")[0], id=k.slice(t.length+1), o=null;
+    if(t==="ccaa"){ o=buscar(MAPA.ccaa,id); if(o) hit("path",{d:o.d, fill:"#000"}, k); }
+    else if(t==="rio"){ o=buscar(MAPA.rios,id);
+      if(o) hit("path",{d:o.d, fill:"none", stroke:"#000", "stroke-width":h.rio, "stroke-linecap":"round"}, k); }
+    else if(t==="cord"){ o=buscar(MAPA.cord,id); if(o) hit("path",{d:o.d, fill:"#000"}, k); }
+    else { o = (t==="agua") ? buscar(MAPA.aguas,id) : buscar(MAPA.ciudades,id);
+      if(o) hit("circle",{cx:o.x, cy:o.y, r:h.pin, fill:"#000"}, k); }
+  }
+  /* Las CCAA son el mapa base: se ven todas siempre, aunque el nivel no las pregunte.
+     Todas tienen que responder al toque o Nil toca Navarra y no pasa nada. */
+  if(bloque==="ccaa"){
+    for(var i=0;i<MAPA.ccaa.length;i++){
+      var k2="ccaa:"+MAPA.ccaa[i].id;
+      if(activos.indexOf(k2)===-1) hit("path",{d:MAPA.ccaa[i].d, fill:"#000"}, k2);
+    }
+  }
+  hits.addEventListener("click", function(ev){
+    var k = ev.target && ev.target.dataset ? ev.target.dataset.k : null;
+    if(k) responder(k);
+  });
+  return {svg:svg, refs:refs};
+}
+function buscar(arr,id){ for(var i=0;i<arr.length;i++) if(arr[i].id===id) return arr[i]; return null; }

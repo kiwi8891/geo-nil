@@ -1,0 +1,136 @@
+
+/* ---------------- portada ---------------- */
+function pintarHome(){
+  document.getElementById("hMon").textContent = S.monedas;
+  document.getElementById("hRacha").innerHTML = "🔥 <b>" + S.racha + "</b> día" + (S.racha === 1 ? "" : "s");
+  var c = document.getElementById("hBloques"); c.innerHTML = "";
+  for(var k in BLOQUES){
+    (function(k){
+      var B = BLOQUES[k];
+      var b = el("button","bq" + (S.activo[k] ? "" : " off"));
+      b.style.setProperty("--c1", B.c1); b.style.setProperty("--c2", B.c2);
+      b.appendChild(el("div","ic", B.ic));
+      b.appendChild(el("div","nm", B.nm));
+      b.appendChild(el("div","lv", NIVELES[S.nivel[k]]));
+      b.onclick = function(){ nuevaRonda(k); };
+      c.appendChild(b);
+    })(k);
+  }
+  document.getElementById("hAlb").textContent = " " + tengoCromos() + "/" + totalCromos();
+  var sb = document.getElementById("hSobre");
+  sb.disabled = S.monedas < S.eco.sobre;
+  sb.textContent = "✨ ABRIR SOBRE · " + S.eco.sobre + " 🪙";
+}
+
+/* ---------------- panel de papá ---------------- */
+function pedirPapa(){
+  var a = 3 + Math.floor(Math.random() * 7), b = 4 + Math.floor(Math.random() * 6);
+  var r = prompt("Panel de papá.\n¿Cuánto es " + a + " × " + b + "?");
+  if(r === null) return;
+  if(parseInt(r, 10) === a * b) verPapa(); else alert("No es esa.");
+}
+function verPapa(){
+  var c = document.getElementById("ppBloques"); c.innerHTML = "";
+  for(var k in BLOQUES){
+    (function(k){
+      var f = el("div","fila2");
+      var sw = el("div","sw" + (S.activo[k] ? " on" : ""));
+      sw.onclick = function(){
+        var n = 0; for(var q in S.activo) if(S.activo[q]) n++;
+        if(S.activo[k] && n <= 1){ alert("Deja al menos un bloque activo."); return; }
+        S.activo[k] = !S.activo[k]; sw.classList.toggle("on"); guardar();
+      };
+      f.appendChild(sw);
+      f.appendChild(el("span","nm", BLOQUES[k].nm));
+      var seg = el("div","seg");
+      for(var lv = 1; lv <= 3; lv++){
+        (function(lv){
+          var bt = el("button", S.nivel[k] === lv ? "on" : "", NIVELES[lv]);
+          bt.onclick = function(){
+            S.nivel[k] = lv; guardar();
+            var hs = seg.querySelectorAll("button");
+            for(var i = 0; i < hs.length; i++) hs[i].className = (i + 1 === lv) ? "on" : "";
+            statsPapa();
+          };
+          seg.appendChild(bt);
+        })(lv);
+      }
+      f.appendChild(seg);
+      c.appendChild(f);
+    })(k);
+  }
+  document.getElementById("ppAcierto").value = S.eco.acierto;
+  document.getElementById("ppSobre").value = S.eco.sobre;
+  statsPapa();
+  go("papa");
+}
+function setEco(){
+  var a = parseInt(document.getElementById("ppAcierto").value, 10);
+  var s = parseInt(document.getElementById("ppSobre").value, 10);
+  if(a > 0) S.eco.acierto = a;
+  if(s > 0) S.eco.sobre = s;
+  guardar(); statsPapa();
+}
+function statsPapa(){
+  var ronda = S.eco.acierto * 10;
+  document.getElementById("ppRonda").textContent = ronda;
+  document.getElementById("ppRatio").textContent = (S.eco.sobre / ronda).toFixed(1).replace(".0", "");
+  var arr = [];
+  for(var k in S.stats){
+    var s = S.stats[k];
+    if(s.ok + s.ko >= 2) arr.push({n:s.n, p:s.ok / (s.ok + s.ko), t:s.ok + s.ko});
+  }
+  arr.sort(function(a, b){ return a.p - b.p; });
+  var falla = arr.filter(function(x){ return x.p < .6; }).slice(0, 8);
+  var d = document.getElementById("ppStats");
+  d.innerHTML = "";
+  d.appendChild(el("div", null, "Rondas jugadas: " + S.sesiones + " · Cromos: " +
+    tengoCromos() + "/" + totalCromos() + " · Monedas: " + S.monedas));
+  if(falla.length){
+    d.appendChild(el("div", null, "Le cuestan más: " + falla.map(function(x){
+      return x.n + " (" + Math.round(x.p * 100) + "%)"; }).join(", ")));
+  } else {
+    d.appendChild(el("div", null, "Aún no hay bastantes respuestas para ver patrones."));
+  }
+}
+function exportar(){
+  var txt = JSON.stringify(S, null, 1);
+  var a = document.createElement("a");
+  a.href = "data:application/json;charset=utf-8," + encodeURIComponent(txt);
+  a.download = "geo_nil_" + hoy() + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function importar(inp){
+  var f = inp.files && inp.files[0]; if(!f) return;
+  var fr = new FileReader();
+  fr.onload = function(){
+    try{
+      var d = JSON.parse(fr.result);
+      if(!d || typeof d !== "object" || !("monedas" in d)) throw 0;
+      S = d; cargar2(); guardar(); alert("Progreso importado."); verPapa(); pintarHome();
+    }catch(e){ alert("Ese fichero no vale."); }
+  };
+  fr.readAsText(f);
+  inp.value = "";
+}
+function cargar2(){
+  var base = estadoNuevo();
+  for(var k in base) if(!(k in S)) S[k] = base[k];
+  for(var b in BLOQUES){
+    if(!(b in S.nivel)) S.nivel[b] = 1;
+    if(!(b in S.activo)) S.activo[b] = true;
+  }
+}
+function borrarTodo(){
+  if(!confirm("¿Borrar TODO el progreso de Nil? No se puede deshacer.")) return;
+  if(!confirm("Seguro del todo. ¿Borramos cromos y monedas?")) return;
+  S = estadoNuevo(); guardar(); pintarHome(); go("home");
+}
+
+/* ---------------- arranque ---------------- */
+cargar();
+pintarHome();
+document.addEventListener("gesturestart", function(e){ e.preventDefault(); });
+</script>
+</body>
+</html>

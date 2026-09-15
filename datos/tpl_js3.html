@@ -1,0 +1,102 @@
+
+/* ---------------- ronda ---------------- */
+var R = null;
+function nuevaRonda(bloque){
+  var pool = itemsDe(bloque);
+  if(pool.length < 3){ alert("Ese bloque no tiene bastantes sitios en este nivel."); return; }
+  var cola = [];
+  while(cola.length < 10){                 /* en fácil hay menos de 10 sitios: se repiten */
+    var v = baraja(pool);
+    for(var i=0;i<v.length && cola.length<10;i++){
+      if(cola.length && cola[cola.length-1].id === v[i].id) continue;
+      cola.push({tipo:v[i].tipo, ref:v[i].ref, id:v[i].id, n:v[i].n, art:v[i].art});
+    }
+  }
+  R = {bloque:bloque, cola:cola, i:0, ok:0, monedas:0, bloqueado:false};
+  /* TODO lo dibujado del bloque es tocable, no solo lo que se pregunta:
+     si toca algo que se ve y no responde nada, no entiende qué pasa. */
+  R.activos = pool.map(function(x){ return x.id; });
+  tocaDia();
+  go("juego");
+  pintarMapa();
+  pregunta();
+}
+function pintarMapa(){
+  var m = dibujarMapa(R.bloque, R.activos);
+  R.refs = m.refs;
+  var w = document.getElementById("jMapa");
+  w.innerHTML = ""; w.appendChild(m.svg);
+}
+function textoPregunta(it){
+  var nm = caso(it.n, R.bloque);
+  if(it.tipo==="capital") return {q:"Toca <em>"+nm+"</em>", sub:"la capital de "+it.ref.ccaaNom};
+  if(it.tipo==="ccaa")    return {q:"Toca <em>"+nm+"</em>", sub:"una comunidad autónoma"};
+  var art = it.art ? it.art+" " : "";
+  var sub = {rio:"un río", cord:"", ciudad:"una ciudad", agua:""}[it.tipo] || "";
+  return {q:"Toca "+art+"<em>"+nm+"</em>", sub:sub};
+}
+function pregunta(){
+  if(R.i >= R.cola.length){ finRonda(); return; }
+  var it = R.cola[R.i], t = textoPregunta(it);
+  document.getElementById("jQ").innerHTML = t.q;
+  document.getElementById("jSub").textContent = t.sub;
+  document.getElementById("jMon").textContent = S.monedas;
+  var b = document.getElementById("jBarra"); b.innerHTML = "";
+  for(var i=0;i<R.cola.length;i++){
+    var p = el("div","pip");
+    if(i < R.i) p.classList.add(R.cola[i].acerto ? "ok" : "ko");
+    else if(i === R.i) p.classList.add("now");
+    b.appendChild(p);
+  }
+  R.bloqueado = false;
+}
+function marcar(key, color, ancho){
+  var n = R.refs[key]; if(!n) return;
+  var hijo = n.tagName === "g" ? n.firstChild : n;
+  if(!hijo) return;
+  if(hijo.getAttribute("fill") && hijo.getAttribute("fill") !== "none") hijo.setAttribute("fill", color);
+  if(hijo.getAttribute("stroke")) hijo.setAttribute("stroke", color);
+  if(ancho && hijo.getAttribute("stroke-width")) hijo.setAttribute("stroke-width", ancho);
+  n.classList.add("flash-ok");
+}
+function responder(key){
+  if(R.bloqueado) return;
+  R.bloqueado = true;
+  var it = R.cola[R.i];
+  var bien = (key === it.id);
+  it.acerto = bien;
+  var st = S.stats[it.id] || (S.stats[it.id] = {ok:0, ko:0, n:it.n});
+  if(bien){
+    st.ok++; R.ok++;
+    var g = S.eco.acierto; R.monedas += g; S.monedas += g;
+    marcar(it.id, "#2e9e5b", 6);
+  }else{
+    st.ko++;
+    marcar(key, "#c0392b", 6);
+    marcar(it.id, "#2e9e5b", 6);
+    document.getElementById("jMapa").classList.add("tiembla");
+    setTimeout(function(){ document.getElementById("jMapa").classList.remove("tiembla"); }, 700);
+    document.getElementById("jSub").textContent = "Aquí está " + (it.art ? it.art + " " : "") + it.n;
+  }
+  guardar();
+  document.getElementById("jMon").textContent = S.monedas;
+  setTimeout(function(){ R.i++; pintarMapa(); pregunta(); }, bien ? 900 : 1900);
+}
+function salirRonda(){ R = null; go("home"); pintarHome(); }
+function otraRonda(){ nuevaRonda(R.bloque); }
+
+function finRonda(){
+  var pct = R.ok / R.cola.length;
+  var extra = 0, bonus = "";
+  var m = multRacha();
+  if(m > 1){ extra = Math.round(R.monedas * (m - 1)); S.monedas += extra;
+    bonus = "Racha de " + S.racha + " días: ×1,5 → +" + extra + " 🪙"; }
+  S.sesiones++;
+  guardar();
+  document.getElementById("fT").textContent = pct === 1 ? "¡PERFECTO!" : (pct >= .7 ? "¡MUY BIEN!" : (pct >= .4 ? "¡BIEN!" : "A SEGUIR"));
+  document.getElementById("fCara").textContent = pct === 1 ? "🤩" : (pct >= .7 ? "😀" : (pct >= .4 ? "🙂" : "💪"));
+  document.getElementById("fRes").textContent = "Has acertado " + R.ok + " de " + R.cola.length;
+  document.getElementById("fMon").textContent = R.monedas + extra;
+  document.getElementById("fBonus").textContent = bonus;
+  go("fin");
+}

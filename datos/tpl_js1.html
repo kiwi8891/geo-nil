@@ -1,0 +1,98 @@
+<script>
+"use strict";
+var MAPA = /*__MAPA__*/;
+var LIGA = /*__LIGA__*/;
+
+/* ---------------- bloques ---------------- */
+var BLOQUES = {
+  ccaa:     {nm:"COMUNIDADES", ic:"🗺️", c1:"#c74a3a", c2:"#8e2418"},
+  rios:     {nm:"RÍOS",        ic:"💧", c1:"#2f7fc4", c2:"#17466f"},
+  cord:     {nm:"MONTAÑAS",    ic:"⛰️", c1:"#a07a44", c2:"#5f441f"},
+  costas:   {nm:"CIUDADES Y MARES", ic:"🏙️", c1:"#2e9e5b", c2:"#165b31"}
+};
+var NIVELES = ["","Fácil","Normal","Difícil"];
+
+/* ---------------- estado ---------------- */
+var KEY = "geo_nil_v1";
+var S;
+function estadoNuevo(){
+  return {
+    v:1, monedas:0, cromos:{}, racha:0, ultimoDia:"",
+    eco:{acierto:10, sobre:200},
+    nivel:{ccaa:1, rios:1, cord:1, costas:1},
+    activo:{ccaa:true, rios:true, cord:true, costas:true},
+    stats:{}, sesiones:0
+  };
+}
+function cargar(){
+  try{ S = JSON.parse(localStorage.getItem(KEY)) || estadoNuevo(); }
+  catch(e){ S = estadoNuevo(); }
+  var base = estadoNuevo();
+  for(var k in base){ if(!(k in S)) S[k]=base[k]; }
+  for(var b in BLOQUES){
+    if(!(b in S.nivel)) S.nivel[b]=1;
+    if(!(b in S.activo)) S.activo[b]=true;
+  }
+}
+function guardar(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+function hoy(){
+  var d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function tocaDia(){
+  var h=hoy();
+  if(S.ultimoDia===h) return;
+  var ayer=new Date(); ayer.setDate(ayer.getDate()-1);
+  var a=ayer.getFullYear()+"-"+String(ayer.getMonth()+1).padStart(2,"0")+"-"+String(ayer.getDate()).padStart(2,"0");
+  S.racha = (S.ultimoDia===a) ? S.racha+1 : 1;
+  S.ultimoDia=h; guardar();
+}
+function multRacha(){ return S.racha>=3 ? 1.5 : 1; }
+
+/* ---------------- utilidades ---------------- */
+function go(id){
+  var all=document.querySelectorAll(".scr");
+  for(var i=0;i<all.length;i++) all[i].classList.remove("on");
+  document.getElementById(id).classList.add("on");
+  window.scrollTo(0,0);
+}
+function baraja(a){
+  a=a.slice();
+  for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+function el(tag,cls,txt){
+  var e=document.createElement(tag);
+  if(cls) e.className=cls;
+  if(txt!=null) e.textContent=txt;
+  return e;
+}
+function caso(txt, bloque){
+  /* nivel 1 y 2 en MAYÚSCULAS, nivel 3 en minúscula (como en LEER_ESCRIBIR) */
+  return S.nivel[bloque] >= 3 ? txt : txt.toUpperCase();
+}
+
+/* ---------------- catálogo de preguntas ---------------- */
+function itemsDe(bloque){
+  var lv = S.nivel[bloque], out = [];
+  function add(arr, tipo){
+    for(var i=0;i<arr.length;i++){
+      var x=arr[i];
+      if(x.lv<=lv) out.push({tipo:tipo, ref:x, id:tipo+":"+x.id, n:x.n, art:x.art||""});
+    }
+  }
+  if(bloque==="ccaa"){
+    add(MAPA.ccaa,"ccaa");
+    if(lv>=2){
+      for(var i=0;i<MAPA.ciudades.length;i++){
+        var c=MAPA.ciudades[i];
+        if(c.cap && c.lv<=lv) out.push({tipo:"capital", ref:c, id:"cap:"+c.id, n:c.n, art:"", ccaa:c.ccaaNom});
+      }
+    }
+  }
+  if(bloque==="rios") add(MAPA.rios,"rio");
+  if(bloque==="cord") add(MAPA.cord,"cord");
+  if(bloque==="costas"){ add(MAPA.ciudades,"ciudad"); add(MAPA.aguas,"agua"); }
+  return out;
+}

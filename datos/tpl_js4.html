@@ -1,0 +1,182 @@
+
+/* ---------------- cromos ---------------- */
+function claveCromo(ie, ij){ return ie + "_" + ij; }
+function totalCromos(){ var t=0; for(var i=0;i<LIGA.length;i++) t+=LIGA[i].jug.length; return t; }
+function tengoCromos(){ var n=0; for(var k in S.cromos) n++; return n; }
+function faltantes(){
+  var f=[];
+  for(var i=0;i<LIGA.length;i++)
+    for(var j=0;j<LIGA[i].jug.length;j++)
+      if(!S.cromos[claveCromo(i,j)]) f.push([i,j]);
+  return f;
+}
+function nodoCromo(i, j, nuevo){
+  var eq = LIGA[i], ju = eq.jug[j];
+  var c = el("div","cromo" + (nuevo ? " nuevo" : ""));
+  c.style.setProperty("--t1", eq.c1 || "#24405e");
+  c.style.setProperty("--t2", eq.c2 || "#101f33");
+  var foto = el("div","foto");
+  if(ju.img){
+    var img = document.createElement("img");
+    img.loading = "lazy"; img.alt = ju.n; img.src = ju.img;
+    img.onerror = function(){ this.remove(); foto.appendChild(escudoGrande(eq)); };
+    foto.appendChild(img);
+  } else {
+    foto.appendChild(escudoGrande(eq));
+  }
+  c.appendChild(foto);
+  if(eq.escudo){
+    var es = document.createElement("img");
+    es.className = "escudo"; es.src = eq.escudo; es.alt = eq.eq; es.loading = "lazy";
+    es.onerror = function(){ this.remove(); };
+    c.appendChild(es);
+  }
+  if(ju.num){ c.appendChild(el("div","dorsal", ju.num)); }
+  var pl = el("div","placa");
+  pl.appendChild(el("div","n", ju.n));
+  pl.appendChild(el("div","p", ju.pos || eq.eq));
+  c.appendChild(pl);
+  return c;
+}
+function escudoGrande(eq){
+  var d = el("div");
+  d.style.cssText = "width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:.55";
+  if(eq.escudo){
+    var i = document.createElement("img");
+    i.src = eq.escudo; i.style.cssText = "width:66%;height:66%;object-fit:contain";
+    i.onerror = function(){ this.remove(); };
+    d.appendChild(i);
+  } else { d.textContent = "⚽"; d.style.fontSize = "40px"; }
+  return d;
+}
+function nodoVacio(){
+  var c = el("div","cromo vacio"); c.appendChild(el("span", null, "?")); return c;
+}
+
+function verAlbum(){
+  var cont = document.getElementById("aEquipos"); cont.innerHTML = "";
+  for(var i=0;i<LIGA.length;i++){
+    (function(i){
+      var eq = LIGA[i], n = 0;
+      for(var j=0;j<eq.jug.length;j++) if(S.cromos[claveCromo(i,j)]) n++;
+      var d = el("div","eqc" + (n === eq.jug.length ? " full" : ""));
+      if(eq.escudo){
+        var im = document.createElement("img");
+        im.src = eq.escudo; im.alt = eq.eq; im.loading = "lazy";
+        im.onerror = function(){ this.remove(); };
+        d.appendChild(im);
+      }
+      d.appendChild(el("div","nm", eq.eq));
+      d.appendChild(el("div","pr", n + "/" + eq.jug.length));
+      d.onclick = function(){ verEquipo(i); };
+      cont.appendChild(d);
+    })(i);
+  }
+  document.getElementById("aProg").textContent = tengoCromos() + "/" + totalCromos();
+  document.getElementById("aMon").textContent = S.monedas;
+  go("album");
+}
+function verEquipo(i){
+  var eq = LIGA[i], cont = document.getElementById("eCromos"); cont.innerHTML = "";
+  var n = 0;
+  for(var j=0;j<eq.jug.length;j++){
+    var w = el("div");
+    if(S.cromos[claveCromo(i,j)]){ w.appendChild(nodoCromo(i,j,false)); n++; }
+    else w.appendChild(nodoVacio());
+    cont.appendChild(w);
+  }
+  document.getElementById("eNom").textContent = eq.eq;
+  document.getElementById("ePr").textContent = n + "/" + eq.jug.length;
+  go("equipo");
+}
+
+/* ---------------- sobre ---------------- */
+var POR_SOBRE = 5, REPE_MONEDAS = 15;
+function irSobre(){
+  document.getElementById("sMon").textContent = S.monedas;
+  var z = document.getElementById("sZona"), b = document.getElementById("sBotones");
+  z.innerHTML = ""; b.innerHTML = "";
+  var falta = faltantes();
+  if(falta.length === 0){
+    var p = el("div","panel");
+    p.appendChild(el("h2", null, "¡ÁLBUM COMPLETO!"));
+    p.appendChild(el("div","caritas", "🏆"));
+    p.appendChild(el("div", null, "Tienes los " + totalCromos() + " cromos."));
+    z.appendChild(p); go("sobre"); return;
+  }
+  if(S.monedas < S.eco.sobre){
+    var p2 = el("div","panel");
+    p2.appendChild(el("h2", null, "TE FALTAN MONEDAS"));
+    p2.appendChild(el("div","caritas", "🪙"));
+    p2.appendChild(el("div", null, "Un sobre cuesta " + S.eco.sobre + " 🪙 y tienes " + S.monedas + "."));
+    p2.appendChild(el("div","mini", "Juega una ronda más."));
+    z.appendChild(p2);
+    var v = el("button","btn","Ir a jugar"); v.onclick = function(){ go("home"); pintarHome(); };
+    b.appendChild(v); go("sobre"); return;
+  }
+  var pq = el("div","paquete");
+  pq.appendChild(el("div","t", "SOBRE"));
+  pq.appendChild(el("div","b", "⚽"));
+  pq.appendChild(el("div","s", POR_SOBRE + " cromos"));
+  pq.onclick = function(){ abrirSobre(pq); };
+  z.appendChild(pq);
+  z.appendChild(el("div","mini","Toca el sobre para abrirlo"));
+  go("sobre");
+}
+function abrirSobre(pq){
+  if(S.monedas < S.eco.sobre) return;
+  S.monedas -= S.eco.sobre;
+  var falta = baraja(faltantes());
+  var todos = [];
+  for(var i=0;i<LIGA.length;i++) for(var j=0;j<LIGA[i].jug.length;j++) todos.push([i,j]);
+  var salen = [];
+  /* al menos uno nuevo garantizado */
+  if(falta.length) salen.push({p:falta[0], nuevo:true});
+  var mezcla = baraja(todos);
+  var k = 0;
+  while(salen.length < POR_SOBRE && k < mezcla.length){
+    var p = mezcla[k++];
+    if(salen.some(function(s){ return s.p[0]===p[0] && s.p[1]===p[1]; })) continue;
+    salen.push({p:p, nuevo: !S.cromos[claveCromo(p[0], p[1])]});
+  }
+  var devuelto = 0;
+  for(var i=0;i<salen.length;i++){
+    var s = salen[i], ck = claveCromo(s.p[0], s.p[1]);
+    if(S.cromos[ck]){ s.nuevo = false; devuelto += REPE_MONEDAS; }
+    else { S.cromos[ck] = 1; s.nuevo = true; }
+  }
+  S.monedas += devuelto;
+  guardar();
+  pq.classList.add("abriendo");
+  setTimeout(function(){ mostrarSobre(baraja(salen), devuelto); }, 620);
+}
+function mostrarSobre(salen, devuelto){
+  var z = document.getElementById("sZona"), b = document.getElementById("sBotones");
+  z.innerHTML = ""; b.innerHTML = "";
+  var g = el("div","revel");
+  for(var i=0;i<salen.length;i++){
+    (function(i){
+      var s = salen[i], w = el("div");
+      w.style.position = "relative";
+      w.appendChild(nodoCromo(s.p[0], s.p[1], s.nuevo));
+      var t = el("div","tag" + (s.nuevo ? "" : " rep"), s.nuevo ? "NUEVO" : "REPE");
+      w.appendChild(t);
+      g.appendChild(w);
+      setTimeout(function(){ w.classList.add("va"); }, 140 * i);
+    })(i);
+  }
+  z.appendChild(g);
+  var nuevos = salen.filter(function(s){ return s.nuevo; }).length;
+  var r = el("div","mini");
+  r.style.cssText = "text-align:center;margin-top:14px;font-size:15px";
+  r.textContent = nuevos + " nuevo" + (nuevos === 1 ? "" : "s") +
+    (devuelto ? " · " + (salen.length - nuevos) + " repetidos → +" + devuelto + " 🪙" : "");
+  z.appendChild(r);
+  document.getElementById("sMon").textContent = S.monedas;
+  setTimeout(function(){
+    var a = el("button","btn sec","Ver álbum"); a.onclick = verAlbum;
+    var c = el("button","btn","Otro sobre"); c.onclick = irSobre;
+    if(S.monedas < S.eco.sobre) c.disabled = true;
+    b.appendChild(a); b.appendChild(c);
+  }, 140 * salen.length + 350);
+}

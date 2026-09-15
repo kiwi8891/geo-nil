@@ -1,0 +1,114 @@
+<!-- ============ PORTADA ============ -->
+<section id="home" class="scr on">
+  <div class="top">
+    <span class="chip">🪙 <b id="hMon">0</b></span>
+    <span class="chip" id="hRacha">🔥 <b>0</b> días</span>
+    <span class="sp"></span>
+    <button class="gear" onclick="pedirPapa()">⚙</button>
+  </div>
+  <div class="cover"><h1>GEO NIL</h1><p>Mapas de España</p></div>
+  <div class="bloques" id="hBloques"></div>
+  <div class="fila">
+    <button class="btn sec" onclick="verAlbum()">📕 MI ÁLBUM <span id="hAlb" class="mini"></span></button>
+    <button class="btn" id="hSobre" onclick="irSobre()">✨ ABRIR SOBRE</button>
+  </div>
+</section>
+
+<!-- ============ JUEGO ============ -->
+<section id="juego" class="scr">
+  <div class="top">
+    <button class="btn sec sm" onclick="salirRonda()">‹ Salir</button>
+    <span class="sp"></span>
+    <span class="chip">🪙 <b id="jMon">0</b></span>
+  </div>
+  <div class="preg"><div class="q" id="jQ">…</div><div class="sub" id="jSub"></div></div>
+  <div class="barra" id="jBarra"></div>
+  <div class="mapwrap" id="jMapa"></div>
+</section>
+
+<!-- ============ FIN DE RONDA ============ -->
+<section id="fin" class="scr">
+  <div class="scroll" style="display:flex">
+    <div class="panel">
+      <h2 id="fT">¡BIEN!</h2>
+      <div class="caritas" id="fCara">😀</div>
+      <div id="fRes" style="font-size:19px"></div>
+      <div class="ganado" style="margin-top:12px">Has ganado <b id="fMon">0</b> 🪙</div>
+      <div class="mini" id="fBonus" style="margin-top:4px"></div>
+      <div class="fila" style="margin-top:18px; padding:0">
+        <button class="btn sec" onclick="go('home')">Inicio</button>
+        <button class="btn" onclick="otraRonda()">Otra ronda</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ÁLBUM ============ -->
+<section id="album" class="scr">
+  <div class="top">
+    <button class="btn sec sm" onclick="go('home')">‹ Inicio</button>
+    <span class="sp"></span>
+    <span class="chip">📕 <b id="aProg">0/0</b></span>
+    <span class="chip">🪙 <b id="aMon">0</b></span>
+  </div>
+  <div class="scroll"><div class="equipos" id="aEquipos"></div></div>
+</section>
+
+<!-- ============ EQUIPO ============ -->
+<section id="equipo" class="scr">
+  <div class="top">
+    <button class="btn sec sm" onclick="verAlbum()">‹ Álbum</button>
+    <span class="sp"></span>
+    <span class="chip" id="eNom">—</span>
+    <span class="chip"><b id="ePr">0/0</b></span>
+  </div>
+  <div class="scroll"><div class="cromos" id="eCromos"></div></div>
+</section>
+
+<!-- ============ SOBRE ============ -->
+<section id="sobre" class="scr">
+  <div class="top">
+    <button class="btn sec sm" onclick="go('home')">‹ Inicio</button>
+    <span class="sp"></span>
+    <span class="chip">🪙 <b id="sMon">0</b></span>
+  </div>
+  <div class="scroll sobrewrap">
+    <div id="sZona"></div>
+    <div class="fila" id="sBotones" style="padding:0"></div>
+  </div>
+</section>
+
+<!-- ============ PANEL DE PAPÁ ============ -->
+<section id="papa" class="scr">
+  <div class="top">
+    <button class="btn sec sm" onclick="go('home')">‹ Salir</button>
+    <span class="sp"></span>
+    <span class="chip">Panel de papá</span>
+  </div>
+  <div class="scroll">
+    <div class="pp">
+      <div class="tt">Bloques y nivel</div>
+      <div id="ppBloques"></div>
+      <div class="tt">Economía</div>
+      <div class="fila2"><span class="nm">Monedas por acierto</span>
+        <input class="num" type="number" id="ppAcierto" min="1" max="99" onchange="setEco()"></div>
+      <div class="fila2"><span class="nm">Precio del sobre</span>
+        <input class="num" type="number" id="ppSobre" min="10" max="9999" step="10" onchange="setEco()"></div>
+      <div class="mini">Una ronda perfecta da <b id="ppRonda">100</b> 🪙. El sobre cuesta
+        <b id="ppRatio">2</b> rondas perfectas. Racha de días: ×1,5 desde el 3.º.</div>
+      <div class="tt">Cómo va</div>
+      <div id="ppStats" class="mini"></div>
+      <div class="tt">Copia de seguridad</div>
+      <div class="fila" style="padding:0; justify-content:flex-start">
+        <button class="btn sec sm" onclick="exportar()">⬇ Exportar</button>
+        <button class="btn sec sm" onclick="document.getElementById('ppFile').click()">⬆ Importar</button>
+        <input type="file" id="ppFile" accept="application/json" style="display:none" onchange="importar(this)">
+      </div>
+      <div class="mini" style="margin-top:8px">El progreso vive en este iPad. Para que Safari no lo borre,
+        añade la app a la pantalla de inicio.</div>
+      <div class="tt">Zona peligrosa</div>
+      <button class="btn sec sm" onclick="borrarTodo()">Borrar todo el progreso</button>
+      <div style="height:30px"></div>
+    </div>
+  </div>
+</section>
