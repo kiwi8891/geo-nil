@@ -37,4 +37,9 @@ Editar la app = editar `datos/tpl_*.html` y volver a correr `build.py`.
   así que son tocables las 19 aunque el nivel no las pregunte. Si Nil toca algo y no pasa
   nada, no entiende el juego.
 - **Overpass se satura:** reintentar en `overpass.kumi.systems` (ver `ov2.py`).
+- **Copias de seguridad en iPad:** `<a download>` con `data:` URI **no hace nada** en Safari iOS,
+  y menos con la app en la pantalla de inicio. La vía buena es `navigator.share` con un `File`
+  (abre la hoja de compartir -> Archivos / Filen / iCloud). Debajo hay escalones: portapapeles,
+  textarea a pelo, y descarga con `blob:` para el ordenador. Restaurar admite fichero **y texto
+  pegado**, y pide confirmación mostrando qué trae la copia frente a lo que hay.
 - No servir el proyecto desde la carpeta sync (Filen bloquea): copiar a `~/tmp/` y servir ahí.

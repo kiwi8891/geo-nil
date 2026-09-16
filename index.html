@@ -200,6 +200,13 @@ svg.mapa .hit{cursor:pointer}
 .mini{font-size:13px; opacity:.6; line-height:1.5}
 .tt{font-family:Anton,Impact,sans-serif; font-size:13px; letter-spacing:.12em; text-transform:uppercase;
   opacity:.5; margin:16px 0 8px}
+textarea.ta{width:100%; min-height:96px; background:rgba(0,0,0,.34); color:var(--cream);
+  border:1px solid rgba(255,255,255,.2); border-radius:11px; padding:10px 12px; font-size:12px;
+  font-family:ui-monospace,Menlo,monospace; resize:vertical; margin-top:9px; -webkit-user-select:text;
+  user-select:text; word-break:break-all}
+.aviso{font-size:13px; margin-top:8px; padding:9px 12px; border-radius:10px; line-height:1.45}
+.aviso.ok{background:rgba(46,158,91,.18); border:1px solid rgba(46,158,91,.5)}
+.aviso.ko{background:rgba(192,57,43,.18); border:1px solid rgba(192,57,43,.5)}
 input.num{background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.2); color:var(--cream);
   border-radius:9px; padding:9px 11px; font-size:17px; width:110px; font-family:Andika,sans-serif}
 </style>
@@ -305,12 +312,34 @@ input.num{background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.2); colo
         <b id="ppRatio">2</b> rondas perfectas. Racha de días: ×1,5 desde el 3.º.</div>
       <div class="tt">Cómo va</div>
       <div id="ppStats" class="mini"></div>
-      <div class="tt">Copia de seguridad</div>
+      <div class="tt">Guardar una copia</div>
       <div class="fila" style="padding:0; justify-content:flex-start">
-        <button class="btn sec sm" onclick="exportar()">⬇ Exportar</button>
-        <button class="btn sec sm" onclick="document.getElementById('ppFile').click()">⬆ Importar</button>
-        <input type="file" id="ppFile" accept="application/json" style="display:none" onchange="importar(this)">
+        <button class="btn sm" id="ppShare" onclick="expCompartir()">📤 Guardar en Archivos</button>
+        <button class="btn sec sm" onclick="expCopiar()">📋 Copiar</button>
+        <button class="btn sec sm" onclick="expDescargar()">⬇ Descargar</button>
+        <button class="btn sec sm" onclick="expTexto()">👁 Ver el texto</button>
       </div>
+      <div id="ppMsg"></div>
+      <textarea class="ta" id="ppTxt" readonly hidden></textarea>
+      <div class="mini" style="margin-top:8px">En el iPad usa <b>Guardar en Archivos</b>: manda el
+        fichero a Archivos, Filen o iCloud. <b>Copiar</b> lo deja en el portapapeles para pegarlo
+        en Notas. La descarga solo va fina en el ordenador.</div>
+
+      <div class="tt">Restaurar una copia</div>
+      <div class="fila" style="padding:0; justify-content:flex-start">
+        <button class="btn sec sm" onclick="document.getElementById('ppFile').click()">📂 Desde fichero</button>
+        <button class="btn sec sm" onclick="pegarZona()">📥 Pegar el texto</button>
+        <input type="file" id="ppFile" accept="application/json,.json,text/plain" style="display:none" onchange="importar(this)">
+      </div>
+      <div id="ppPegarZona" hidden>
+        <textarea class="ta" id="ppPegar" placeholder="Pega aquí el texto de la copia y pulsa Restaurar"></textarea>
+        <div class="fila" style="padding:8px 0 0; justify-content:flex-start">
+          <button class="btn sm" onclick="impTexto()">Restaurar</button>
+          <button class="btn sec sm" onclick="pegarZona(false)">Cancelar</button>
+        </div>
+      </div>
+      <div class="mini" style="margin-top:8px">Restaurar <b>sustituye</b> el progreso de Nil.
+        Te digo antes qué trae la copia.</div>
       <div class="mini" style="margin-top:8px">El progreso vive en este iPad. Para que Safari no lo borre,
         añade la app a la pantalla de inicio.</div>
       <div class="tt">Zona peligrosa</div>
@@ -888,6 +917,11 @@ function verPapa(){
   }
   document.getElementById("ppAcierto").value = S.eco.acierto;
   document.getElementById("ppSobre").value = S.eco.sobre;
+  var sh = document.getElementById("ppShare");
+  if(sh) sh.hidden = !navigator.share;
+  document.getElementById("ppTxt").hidden = true;
+  document.getElementById("ppMsg").innerHTML = "";
+  pegarZona(false);
   statsPapa();
   go("papa");
 }
@@ -920,25 +954,98 @@ function statsPapa(){
     d.appendChild(el("div", null, "Aún no hay bastantes respuestas para ver patrones."));
   }
 }
-function exportar(){
-  var txt = JSON.stringify(S, null, 1);
-  var a = document.createElement("a");
-  a.href = "data:application/json;charset=utf-8," + encodeURIComponent(txt);
-  a.download = "geo_nil_" + hoy() + ".json";
-  document.body.appendChild(a); a.click(); a.remove();
+/* ---------------- copias de seguridad ----------------
+   En iPad, <a download> con data: URI no hace nada (y menos con la app en la
+   pantalla de inicio). Por eso la vía buena es navigator.share con un File,
+   que abre la hoja de compartir -> Archivos / Filen / iCloud. El resto son
+   escalones de respaldo por si esa API no está. */
+function nombreCopia(){ return "geo_nil_" + hoy() + ".json"; }
+function textoCopia(){ return JSON.stringify(S, null, 1); }
+function aviso(txt, bien){
+  var d = document.getElementById("ppMsg");
+  d.innerHTML = "";
+  var a = el("div", "aviso " + (bien ? "ok" : "ko"), txt);
+  d.appendChild(a);
+}
+function resumen(o){
+  var n = 0; for(var k in (o.cromos || {})) n++;
+  return (o.monedas || 0) + " monedas, " + n + " cromos, " +
+         (o.sesiones || 0) + " rondas, racha de " + (o.racha || 0) +
+         (o.ultimoDia ? " (último día: " + o.ultimoDia + ")" : "");
+}
+function expCompartir(){
+  var txt = textoCopia();
+  if(!navigator.share){ aviso("Este navegador no sabe compartir. Usa Copiar o Descargar.", false); return; }
+  var listo = function(datos){
+    navigator.share(datos).then(function(){
+      aviso("Copia enviada. Guárdala en Archivos, Filen o iCloud.", true);
+    }).catch(function(e){
+      if(e && e.name === "AbortError") return;      /* la canceló él, no es un fallo */
+      aviso("No se ha podido compartir. Prueba con Copiar.", false);
+    });
+  };
+  try{
+    var f = new File([txt], nombreCopia(), {type:"application/json"});
+    if(navigator.canShare && navigator.canShare({files:[f]})){ listo({files:[f], title:"Progreso de GEO NIL"}); return; }
+  }catch(e){}
+  listo({title:"Progreso de GEO NIL", text:txt});   /* sin soporte de ficheros, va el texto */
+}
+function expCopiar(){
+  var txt = textoCopia();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      aviso("Copiado. Pégalo en Notas o en un fichero y guárdalo.", true);
+    }).catch(function(){ expTexto(); aviso("Cópialo a mano desde el cuadro de abajo.", false); });
+  } else { expTexto(); aviso("Cópialo a mano desde el cuadro de abajo.", false); }
+}
+function expDescargar(){
+  try{
+    var b = new Blob([textoCopia()], {type:"application/json"});
+    var u = URL.createObjectURL(b);               /* blob:, no data: */
+    var a = document.createElement("a");
+    a.href = u; a.download = nombreCopia();
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
+    aviso("Si no ves el fichero, en iPad usa Guardar en Archivos.", true);
+  }catch(e){ aviso("La descarga ha fallado. Usa Guardar en Archivos o Copiar.", false); }
+}
+function expTexto(){
+  var t = document.getElementById("ppTxt");
+  t.value = textoCopia(); t.hidden = false;
+  t.focus(); t.setSelectionRange(0, t.value.length);
+}
+function pegarZona(abrir){
+  var z = document.getElementById("ppPegarZona");
+  z.hidden = (abrir === false);
+  if(!z.hidden) document.getElementById("ppPegar").focus();
+  else document.getElementById("ppPegar").value = "";
+}
+function aplicarCopia(d){
+  if(!d || typeof d !== "object" || typeof d.monedas !== "number" || !("cromos" in d)){
+    aviso("Ese texto no es una copia de GEO NIL.", false); return false;
+  }
+  if(!confirm("La copia trae:\n\n" + resumen(d) + "\n\nAhora mismo hay:\n\n" + resumen(S) +
+              "\n\n¿Sustituimos el progreso de Nil por el de la copia?")) return false;
+  S = d; cargar2(); guardar(); pintarHome(); verPapa();
+  aviso("Restaurado: " + resumen(S), true);
+  return true;
+}
+function impTexto(){
+  var v = document.getElementById("ppPegar").value.trim();
+  if(!v){ aviso("Pega antes el texto de la copia.", false); return; }
+  try{ if(aplicarCopia(JSON.parse(v))) pegarZona(false); }
+  catch(e){ aviso("Ese texto no es JSON válido. Cópialo entero, desde la primera llave.", false); }
 }
 function importar(inp){
-  var f = inp.files && inp.files[0]; if(!f) return;
+  var f = inp.files && inp.files[0]; inp.value = "";
+  if(!f) return;
   var fr = new FileReader();
   fr.onload = function(){
-    try{
-      var d = JSON.parse(fr.result);
-      if(!d || typeof d !== "object" || !("monedas" in d)) throw 0;
-      S = d; cargar2(); guardar(); alert("Progreso importado."); verPapa(); pintarHome();
-    }catch(e){ alert("Ese fichero no vale."); }
+    try{ aplicarCopia(JSON.parse(fr.result)); }
+    catch(e){ aviso("Ese fichero no es una copia válida.", false); }
   };
+  fr.onerror = function(){ aviso("No se ha podido leer el fichero.", false); };
   fr.readAsText(f);
-  inp.value = "";
 }
 function cargar2(){
   var base = estadoNuevo();

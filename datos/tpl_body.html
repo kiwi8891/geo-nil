@@ -98,12 +98,34 @@
         <b id="ppRatio">2</b> rondas perfectas. Racha de días: ×1,5 desde el 3.º.</div>
       <div class="tt">Cómo va</div>
       <div id="ppStats" class="mini"></div>
-      <div class="tt">Copia de seguridad</div>
+      <div class="tt">Guardar una copia</div>
       <div class="fila" style="padding:0; justify-content:flex-start">
-        <button class="btn sec sm" onclick="exportar()">⬇ Exportar</button>
-        <button class="btn sec sm" onclick="document.getElementById('ppFile').click()">⬆ Importar</button>
-        <input type="file" id="ppFile" accept="application/json" style="display:none" onchange="importar(this)">
+        <button class="btn sm" id="ppShare" onclick="expCompartir()">📤 Guardar en Archivos</button>
+        <button class="btn sec sm" onclick="expCopiar()">📋 Copiar</button>
+        <button class="btn sec sm" onclick="expDescargar()">⬇ Descargar</button>
+        <button class="btn sec sm" onclick="expTexto()">👁 Ver el texto</button>
       </div>
+      <div id="ppMsg"></div>
+      <textarea class="ta" id="ppTxt" readonly hidden></textarea>
+      <div class="mini" style="margin-top:8px">En el iPad usa <b>Guardar en Archivos</b>: manda el
+        fichero a Archivos, Filen o iCloud. <b>Copiar</b> lo deja en el portapapeles para pegarlo
+        en Notas. La descarga solo va fina en el ordenador.</div>
+
+      <div class="tt">Restaurar una copia</div>
+      <div class="fila" style="padding:0; justify-content:flex-start">
+        <button class="btn sec sm" onclick="document.getElementById('ppFile').click()">📂 Desde fichero</button>
+        <button class="btn sec sm" onclick="pegarZona()">📥 Pegar el texto</button>
+        <input type="file" id="ppFile" accept="application/json,.json,text/plain" style="display:none" onchange="importar(this)">
+      </div>
+      <div id="ppPegarZona" hidden>
+        <textarea class="ta" id="ppPegar" placeholder="Pega aquí el texto de la copia y pulsa Restaurar"></textarea>
+        <div class="fila" style="padding:8px 0 0; justify-content:flex-start">
+          <button class="btn sm" onclick="impTexto()">Restaurar</button>
+          <button class="btn sec sm" onclick="pegarZona(false)">Cancelar</button>
+        </div>
+      </div>
+      <div class="mini" style="margin-top:8px">Restaurar <b>sustituye</b> el progreso de Nil.
+        Te digo antes qué trae la copia.</div>
       <div class="mini" style="margin-top:8px">El progreso vive en este iPad. Para que Safari no lo borre,
         añade la app a la pantalla de inicio.</div>
       <div class="tt">Zona peligrosa</div>
