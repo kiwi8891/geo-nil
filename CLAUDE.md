@@ -43,3 +43,6 @@ Editar la app = editar `datos/tpl_*.html` y volver a correr `build.py`.
   textarea a pelo, y descarga con `blob:` para el ordenador. Restaurar admite fichero **y texto
   pegado**, y pide confirmación mostrando qué trae la copia frente a lo que hay.
 - No servir el proyecto desde la carpeta sync (Filen bloquea): copiar a `~/tmp/` y servir ahí.
+- **`go("home")` a pelo deja la portada congelada:** el contador de monedas y el botón del
+  sobre solo se refrescan en `pintarHome()`. Volver a la portada sin repintar hacía que Nil
+  ganara monedas y viera un 0 fijo con el sobre desactivado. Usar siempre `irHome()`.
