@@ -54,7 +54,7 @@ Editar la app = editar `datos/tpl_*.html` y volver a correr `build.py`.
 - **Banderas de las CCAA** dibujadas a mano en `datos/banderas.py` -> `out_banderas.json`,
   horneadas en el HTML. Se usan como pista junto a la pregunta y como premio al acertar;
   nunca se pregunta por ellas.
-- **Cromos**: 220 = 200 jugadores + 1 estadio por equipo. Se amplían tocándolos (`ampliar()`).
+- **Cromos**: 253 = 233 jugadores (204 con foto) + 1 estadio por equipo. Se amplían tocándolos (`ampliar()`).
 - **Tienda**: sobre de 5 al azar (200) o elegir un cromo concreto (500, `S.eco.cromo`).
 - **23 ríos** (eran 12).
 
@@ -62,6 +62,13 @@ Editar la app = editar `datos/tpl_*.html` y volver a correr `build.py`.
 - **`go("home")` a pelo deja la portada congelada:** el contador de monedas y el botón del
   sobre solo se refrescan en `pintarHome()`. Volver a la portada sin repintar hacía que Nil
   ganara monedas y viera un 0 fijo con el sobre desactivado. Usar siempre `irHome()`.
+- **`lookup_all_players.php` devuelve los 10 primeros POR ORDEN ALFABÉTICO**, no los mejores:
+  el Real Madrid salía con Alexis Ciria y sin Mbappé. Las estrellas se piden una a una con
+  `searchplayers.php?p=<nombre>` (`datos/estrellas.py`) y solo se aceptan si `strTeam` cuadra.
+- **Si la API pone a un jugador en otro club, gana la API.** Lewandowski aparece en Chicago
+  Fire y Griezmann en Orlando City: parecen errores y son traspasos reales más recientes que
+  lo que sabe el modelo. Forzarlos metería cromos falsos. Sí se acepta el nombre corto
+  ("Vallecano" por "Rayo Vallecano"), pero nunca el filial ni el femenino.
 - **TheSportsDB tiene mal la liga de 4 equipos:** Girona, Mallorca y Real Oviedo figuran como
   `Spanish La Liga 2`. Filtrar por `strLeague` los tiraba. Ahora se filtra por
   `strCountry == "Spain"` + `strGender == "Male"`, que sí están bien.

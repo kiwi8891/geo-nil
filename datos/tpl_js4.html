@@ -184,10 +184,6 @@ function irTienda(){
   else av.textContent = "";
   go("tienda");
 }
-function irSobre(){
-  /* el botón de la portada entra por la tienda */
-  irTienda();
-}
 function comprarSobre(){
   if(S.monedas < S.eco.sobre || !faltantes().length) return;
   var z = document.getElementById("sZona"), b = document.getElementById("sBotones");

@@ -36,7 +36,8 @@ NAC={"Algeria":"Argelia","Argentina":"Argentina","Austria":"Austria","Brazil":"B
  "Norway":"Noruega","Portugal":"Portugal","Romania":"Rumanía","Russia":"Rusia",
  "Senegal":"Senegal","Slovakia":"Eslovaquia","Spain":"España","Sweden":"Suecia",
  "The Netherlands":"Países Bajos","Togo":"Togo","Turkey":"Turquía","Ukraine":"Ucrania",
- "United States":"Estados Unidos","Uruguay":"Uruguay"}
+ "United States":"Estados Unidos","Uruguay":"Uruguay","Japan":"Japón",
+ "Slovenia":"Eslovenia","Belgium":"Bélgica"}
 for e in liga:
     for j in e["jug"]:
         j["nac"]=NAC.get(j["nac"], j["nac"] or "")
