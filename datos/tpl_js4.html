@@ -111,7 +111,7 @@ function irSobre(){
     p2.appendChild(el("div", null, "Un sobre cuesta " + S.eco.sobre + " 🪙 y tienes " + S.monedas + "."));
     p2.appendChild(el("div","mini", "Juega una ronda más."));
     z.appendChild(p2);
-    var v = el("button","btn","Ir a jugar"); v.onclick = function(){ go("home"); pintarHome(); };
+    var v = el("button","btn","Ir a jugar"); v.onclick = irHome;
     b.appendChild(v); go("sobre"); return;
   }
   var pq = el("div","paquete");

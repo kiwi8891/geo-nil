@@ -57,6 +57,10 @@ function go(id){
   document.getElementById(id).classList.add("on");
   window.scrollTo(0,0);
 }
+/* Volver a la portada SIEMPRE repintando: si no, el contador de monedas y el
+   botón del sobre se quedan con el valor de la última vez que se pintó (arranque),
+   y por mucho que Nil gane monedas el sobre sigue desactivado. */
+function irHome(){ go("home"); pintarHome(); }
 function baraja(a){
   a=a.slice();
   for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }

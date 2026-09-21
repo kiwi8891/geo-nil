@@ -82,7 +82,7 @@ function responder(key){
   document.getElementById("jMon").textContent = S.monedas;
   setTimeout(function(){ R.i++; pintarMapa(); pregunta(); }, bien ? 900 : 1900);
 }
-function salirRonda(){ R = null; go("home"); pintarHome(); }
+function salirRonda(){ R = null; irHome(); }
 function otraRonda(){ nuevaRonda(R.bloque); }
 
 function finRonda(){

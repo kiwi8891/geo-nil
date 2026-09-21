@@ -250,7 +250,7 @@ input.num{background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.2); colo
       <div class="ganado" style="margin-top:12px">Has ganado <b id="fMon">0</b> 🪙</div>
       <div class="mini" id="fBonus" style="margin-top:4px"></div>
       <div class="fila" style="margin-top:18px; padding:0">
-        <button class="btn sec" onclick="go('home')">Inicio</button>
+        <button class="btn sec" onclick="irHome()">Inicio</button>
         <button class="btn" onclick="otraRonda()">Otra ronda</button>
       </div>
     </div>
@@ -260,7 +260,7 @@ input.num{background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.2); colo
 <!-- ============ ÁLBUM ============ -->
 <section id="album" class="scr">
   <div class="top">
-    <button class="btn sec sm" onclick="go('home')">‹ Inicio</button>
+    <button class="btn sec sm" onclick="irHome()">‹ Inicio</button>
     <span class="sp"></span>
     <span class="chip">📕 <b id="aProg">0/0</b></span>
     <span class="chip">🪙 <b id="aMon">0</b></span>
@@ -282,7 +282,7 @@ input.num{background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.2); colo
 <!-- ============ SOBRE ============ -->
 <section id="sobre" class="scr">
   <div class="top">
-    <button class="btn sec sm" onclick="go('home')">‹ Inicio</button>
+    <button class="btn sec sm" onclick="irHome()">‹ Inicio</button>
     <span class="sp"></span>
     <span class="chip">🪙 <b id="sMon">0</b></span>
   </div>
@@ -295,7 +295,7 @@ input.num{background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.2); colo
 <!-- ============ PANEL DE PAPÁ ============ -->
 <section id="papa" class="scr">
   <div class="top">
-    <button class="btn sec sm" onclick="go('home')">‹ Salir</button>
+    <button class="btn sec sm" onclick="irHome()">‹ Salir</button>
     <span class="sp"></span>
     <span class="chip">Panel de papá</span>
   </div>
@@ -407,6 +407,10 @@ function go(id){
   document.getElementById(id).classList.add("on");
   window.scrollTo(0,0);
 }
+/* Volver a la portada SIEMPRE repintando: si no, el contador de monedas y el
+   botón del sobre se quedan con el valor de la última vez que se pintó (arranque),
+   y por mucho que Nil gane monedas el sobre sigue desactivado. */
+function irHome(){ go("home"); pintarHome(); }
 function baraja(a){
   a=a.slice();
   for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
@@ -654,7 +658,7 @@ function responder(key){
   document.getElementById("jMon").textContent = S.monedas;
   setTimeout(function(){ R.i++; pintarMapa(); pregunta(); }, bien ? 900 : 1900);
 }
-function salirRonda(){ R = null; go("home"); pintarHome(); }
+function salirRonda(){ R = null; irHome(); }
 function otraRonda(){ nuevaRonda(R.bloque); }
 
 function finRonda(){
@@ -785,7 +789,7 @@ function irSobre(){
     p2.appendChild(el("div", null, "Un sobre cuesta " + S.eco.sobre + " 🪙 y tienes " + S.monedas + "."));
     p2.appendChild(el("div","mini", "Juega una ronda más."));
     z.appendChild(p2);
-    var v = el("button","btn","Ir a jugar"); v.onclick = function(){ go("home"); pintarHome(); };
+    var v = el("button","btn","Ir a jugar"); v.onclick = irHome;
     b.appendChild(v); go("sobre"); return;
   }
   var pq = el("div","paquete");
@@ -1058,7 +1062,7 @@ function cargar2(){
 function borrarTodo(){
   if(!confirm("¿Borrar TODO el progreso de Nil? No se puede deshacer.")) return;
   if(!confirm("Seguro del todo. ¿Borramos cromos y monedas?")) return;
-  S = estadoNuevo(); guardar(); pintarHome(); go("home");
+  S = estadoNuevo(); guardar(); irHome();
 }
 
 /* ---------------- arranque ---------------- */
