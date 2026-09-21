@@ -1,11 +1,14 @@
 
 /* ---------------- dibujo del mapa ---------------- */
-var HIT = {1:{rio:26, pin:30, }, 2:{rio:19, pin:24}, 3:{rio:13, pin:17}};
+/* La zona de toque se encoge según sube el nivel. Cinco escalones ahora,
+   y el dedo de un niño de 6 años necesita bastante más que el píxel exacto. */
+var HIT = {1:{rio:28, pin:32}, 2:{rio:24, pin:28}, 3:{rio:19, pin:24},
+           4:{rio:15, pin:20}, 5:{rio:12, pin:16}};
 
 function dibujarMapa(bloque, activos){
   /* activos = ids (tipo:id) que son tocables esta ronda */
   var lv = S.nivel[bloque];
-  var h = HIT[lv] || HIT[3];
+  var h = HIT[lv] || HIT[5];
   var NS = "http://www.w3.org/2000/svg";
   var svg = document.createElementNS(NS,"svg");
   svg.setAttribute("viewBox","0 0 "+MAPA.W+" "+MAPA.H);
@@ -67,25 +70,36 @@ function dibujarMapa(bloque, activos){
     if(bloque==="rios") refs["rio:"+r.id]=n;
   }
   /* chinchetas */
-  function pin(p, tipo, color){
+  function pin(p, tipo, color, estrella){
     var g=document.createElementNS(NS,"g");
     var c1=document.createElementNS(NS,"circle");
-    c1.setAttribute("cx",p.x); c1.setAttribute("cy",p.y); c1.setAttribute("r",7.5);
+    c1.setAttribute("cx",p.x); c1.setAttribute("cy",p.y); c1.setAttribute("r", estrella ? 8.5 : 7.5);
     c1.setAttribute("fill",color); c1.setAttribute("stroke","#fff"); c1.setAttribute("stroke-width",2);
-    g.appendChild(c1); raiz.appendChild(g);
+    g.appendChild(c1);
+    if(estrella){
+      /* la capital se distingue de la ciudad normal a simple vista */
+      var p2=document.createElementNS(NS,"circle");
+      p2.setAttribute("cx",p.x); p2.setAttribute("cy",p.y); p2.setAttribute("r",3);
+      p2.setAttribute("fill","#fff"); g.appendChild(p2);
+    }
+    raiz.appendChild(g);
     refs[tipo+":"+p.id]=g;
     return g;
   }
-  if(bloque==="costas" || bloque==="ccaa"){
+  if(bloque==="costas"){
     for(var i=0;i<MAPA.aguas.length;i++){
       var a=MAPA.aguas[i];
-      if(bloque!=="costas" || !visible(a)) continue;
-      pin(a,"agua","#1b5e8a");
+      if(visible(a)) pin(a,"agua","#1b5e8a");
     }
     for(var i=0;i<MAPA.ciudades.length;i++){
       var c=MAPA.ciudades[i];
-      if(bloque==="costas"){ if(!visible(c)) continue; pin(c,"ciudad","#c0392b"); }
-      else { if(lv<2 || !c.cap || !visible(c)) continue; pin(c,"cap","#c0392b"); }
+      if(!c.cap && visible(c)) pin(c,"ciudad","#c0392b");
+    }
+  }
+  if(bloque==="capitales"){
+    for(var i=0;i<MAPA.ciudades.length;i++){
+      var c=MAPA.ciudades[i];
+      if(c.cap && visible(c)) pin(c,"cap","#c9952f",true);
     }
   }
 
@@ -113,6 +127,25 @@ function dibujarMapa(bloque, activos){
     for(var i=0;i<MAPA.ccaa.length;i++){
       var k2="ccaa:"+MAPA.ccaa[i].id;
       if(activos.indexOf(k2)===-1) hit("path",{d:MAPA.ccaa[i].d, fill:"#000"}, k2);
+    }
+  }
+  /* Lo mismo con las chinchetas dibujadas que este nivel no pregunta: si se ven,
+     se tocan. Si no, Nil toca Palma, no pasa nada y deja de fiarse del mapa. */
+  if(bloque==="capitales" || bloque==="costas"){
+    for(var i=0;i<MAPA.ciudades.length;i++){
+      var c3=MAPA.ciudades[i];
+      if(!visible(c3)) continue;
+      if(bloque==="capitales" ? !c3.cap : c3.cap) continue;
+      var k3=(bloque==="capitales" ? "cap:" : "ciudad:")+c3.id;
+      if(activos.indexOf(k3)===-1) hit("circle",{cx:c3.x, cy:c3.y, r:h.pin, fill:"#000"}, k3);
+    }
+    if(bloque==="costas"){
+      for(var i=0;i<MAPA.aguas.length;i++){
+        var a2=MAPA.aguas[i];
+        if(!visible(a2)) continue;
+        var k4="agua:"+a2.id;
+        if(activos.indexOf(k4)===-1) hit("circle",{cx:a2.x, cy:a2.y, r:h.pin, fill:"#000"}, k4);
+      }
     }
   }
   hits.addEventListener("click", function(ev){

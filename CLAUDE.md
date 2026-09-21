@@ -46,3 +46,39 @@ Editar la app = editar `datos/tpl_*.html` y volver a correr `build.py`.
 - **`go("home")` a pelo deja la portada congelada:** el contador de monedas y el botón del
   sobre solo se refrescan en `pintarHome()`. Volver a la portada sin repintar hacía que Nil
   ganara monedas y viera un 0 fijo con el sobre desactivado. Usar siempre `irHome()`.
+
+## Cambios de la v2 (2026-09-21)
+- **Cinco bloques**: las capitales salieron del bloque de comunidades y tienen el suyo.
+- **Cinco niveles** en vez de tres (`datos/niveles.py` tiene las tablas, una lista por nivel).
+  El estado guardado se migra solo (v1 -> v2: niveles 1,2,3 -> 1,3,5) en `migrar()`.
+- **Banderas de las CCAA** dibujadas a mano en `datos/banderas.py` -> `out_banderas.json`,
+  horneadas en el HTML. Se usan como pista junto a la pregunta y como premio al acertar;
+  nunca se pregunta por ellas.
+- **Cromos**: 220 = 200 jugadores + 1 estadio por equipo. Se amplían tocándolos (`ampliar()`).
+- **Tienda**: sobre de 5 al azar (200) o elegir un cromo concreto (500, `S.eco.cromo`).
+- **23 ríos** (eran 12).
+
+## Gotchas ya pagados (v2)
+- **`go("home")` a pelo deja la portada congelada:** el contador de monedas y el botón del
+  sobre solo se refrescan en `pintarHome()`. Volver a la portada sin repintar hacía que Nil
+  ganara monedas y viera un 0 fijo con el sobre desactivado. Usar siempre `irHome()`.
+- **TheSportsDB tiene mal la liga de 4 equipos:** Girona, Mallorca y Real Oviedo figuran como
+  `Spanish La Liga 2`. Filtrar por `strLeague` los tiraba. Ahora se filtra por
+  `strCountry == "Spain"` + `strGender == "Male"`, que sí están bien.
+- **`searchteams.php?t=Alaves` devuelve el equipo FEMENINO** (Alavés Gloriosas, Liga F).
+  El masculino sale buscando "Deportivo Alaves". Por eso `cromos4.py` lleva alias de búsqueda.
+- **Los intermedios del mapa ya no están en disco** (`rivers.json`, `out_ccaa.json`, `atlas_ccaa.json`...):
+  `geo.py` / `rios.py` / `bundle.py` NO se pueden re-ejecutar. `rios_add.py` y `niveles.py`
+  trabajan sobre `out_mapa.json` directamente y son idempotentes.
+- **Natural Earth mezcla ríos homónimos:** el Alagón salía repartido por media España porque
+  el encadenado pintaba todos los tramos con ese nombre. `trazo()` se queda con el cauce más
+  largo y descarta lo que caiga a más de 1,2 grados.
+- **Overpass está casi siempre saturado** y `overpass.osm.jp` tiene el certificado roto
+  (hostname mismatch). Para ríos, la fuente buena es `ne_10m_rivers_europe` (suplemento
+  europeo de Natural Earth): 33 ríos españoles con nombre, un fichero, sin rate limit.
+  El global `ne_10m_rivers_lake_centerlines` solo traía 8.
+
+## Pendiente
+- **Llobregat, Ter, Jarama y Gállego**: no están en Natural Earth y Overpass no respondió.
+  `python3 ov3.py Llobregat Ter Jarama Gallego` es reanudable; después `rios_add.py` y
+  `niveles.py` (sus nombres ya están en las tablas de nivel 4 y 5).

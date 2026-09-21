@@ -1,42 +1,73 @@
 
-/* ---------------- cromos ---------------- */
+/* ---------------- cromos ----------------
+   Dos clases de cromo: jugador ("3_7") y estadio ("3_est"). Las claves de
+   jugador son las de siempre, así que los álbumes ya empezados no se pierden. */
 function claveCromo(ie, ij){ return ie + "_" + ij; }
-function totalCromos(){ var t=0; for(var i=0;i<LIGA.length;i++) t+=LIGA[i].jug.length; return t; }
-function tengoCromos(){ var n=0; for(var k in S.cromos) n++; return n; }
-function faltantes(){
-  var f=[];
-  for(var i=0;i<LIGA.length;i++)
-    for(var j=0;j<LIGA[i].jug.length;j++)
-      if(!S.cromos[claveCromo(i,j)]) f.push([i,j]);
-  return f;
-}
-function nodoCromo(i, j, nuevo){
-  var eq = LIGA[i], ju = eq.jug[j];
-  var c = el("div","cromo" + (nuevo ? " nuevo" : ""));
-  c.style.setProperty("--t1", eq.c1 || "#24405e");
-  c.style.setProperty("--t2", eq.c2 || "#101f33");
-  var foto = el("div","foto");
-  if(ju.img){
-    var img = document.createElement("img");
-    img.loading = "lazy"; img.alt = ju.n; img.src = ju.img;
-    img.onerror = function(){ this.remove(); foto.appendChild(escudoGrande(eq)); };
-    foto.appendChild(img);
-  } else {
-    foto.appendChild(escudoGrande(eq));
+function claveEstadio(ie){ return ie + "_est"; }
+
+var CAT = null;
+function catalogo(){
+  if(CAT) return CAT;
+  CAT = [];
+  for(var i=0;i<LIGA.length;i++){
+    for(var j=0;j<LIGA[i].jug.length;j++) CAT.push({k:claveCromo(i,j), eq:i, tipo:"jug", j:j});
+    CAT.push({k:claveEstadio(i), eq:i, tipo:"estadio"});
   }
-  c.appendChild(foto);
+  return CAT;
+}
+function cromosDe(i){
+  return catalogo().filter(function(c){ return c.eq === i; });
+}
+function totalCromos(){ return catalogo().length; }
+function tengoCromos(){
+  var n=0, c=catalogo();
+  for(var i=0;i<c.length;i++) if(S.cromos[c[i].k]) n++;
+  return n;
+}
+function faltantes(){
+  return catalogo().filter(function(c){ return !S.cromos[c.k]; });
+}
+
+function nodoCromo(c, nuevo){
+  var eq = LIGA[c.eq];
+  var d = el("div","cromo" + (nuevo ? " nuevo" : "") + (c.tipo === "estadio" ? " est" : ""));
+  d.style.setProperty("--t1", eq.c1 || "#24405e");
+  d.style.setProperty("--t2", eq.c2 || "#101f33");
+  var foto = el("div","foto");
+  if(c.tipo === "estadio"){
+    foto.appendChild(el("div","estadio-ic", "🏟️"));
+  } else {
+    var ju = eq.jug[c.j];
+    if(ju.img){
+      var img = document.createElement("img");
+      img.loading = "lazy"; img.alt = ju.n; img.src = ju.img;
+      img.onerror = function(){ this.remove(); foto.appendChild(escudoGrande(eq)); };
+      foto.appendChild(img);
+    } else {
+      foto.appendChild(escudoGrande(eq));
+    }
+  }
+  d.appendChild(foto);
   if(eq.escudo){
     var es = document.createElement("img");
     es.className = "escudo"; es.src = eq.escudo; es.alt = eq.eq; es.loading = "lazy";
     es.onerror = function(){ this.remove(); };
-    c.appendChild(es);
+    d.appendChild(es);
   }
-  if(ju.num){ c.appendChild(el("div","dorsal", ju.num)); }
   var pl = el("div","placa");
-  pl.appendChild(el("div","n", ju.n));
-  pl.appendChild(el("div","p", ju.pos || eq.eq));
-  c.appendChild(pl);
-  return c;
+  if(c.tipo === "estadio"){
+    pl.appendChild(el("div","n", eq.estadio || eq.eq));
+    pl.appendChild(el("div","p", eq.ciudad || "Estadio"));
+    d.appendChild(el("div","dorsal", "🏟"));
+  } else {
+    var ju2 = eq.jug[c.j];
+    pl.appendChild(el("div","n", ju2.n));
+    pl.appendChild(el("div","p", ju2.pos || eq.eq));
+    if(ju2.num) d.appendChild(el("div","dorsal", ju2.num));
+  }
+  d.appendChild(pl);
+  d.onclick = function(){ ampliar(c); };
+  return d;
 }
 function escudoGrande(eq){
   var d = el("div");
@@ -53,13 +84,54 @@ function nodoVacio(){
   var c = el("div","cromo vacio"); c.appendChild(el("span", null, "?")); return c;
 }
 
+/* ---------------- cromo a pantalla completa ----------------
+   En el álbum se ven a tamaño uña. Al tocar uno se abre grande con su ficha. */
+function ampliar(c){
+  if(!S.cromos[c.k]) return;
+  var eq = LIGA[c.eq];
+  var lupa = document.getElementById("lupa");
+  var caja = document.getElementById("lupaCaja");
+  caja.innerHTML = "";
+  var w = el("div","lupaCromo");
+  var copia = nodoCromo(c, false);
+  copia.onclick = null;
+  w.appendChild(copia);
+  caja.appendChild(w);
+  var fi = el("div","ficha");
+  function dato(k, v){
+    if(!v) return;
+    var f = el("div","d");
+    f.appendChild(el("span","k", k));
+    f.appendChild(el("span","v", v));
+    fi.appendChild(f);
+  }
+  if(c.tipo === "estadio"){
+    fi.appendChild(el("h3", null, eq.estadio || eq.eq));
+    dato("Equipo", eq.eq);
+    dato("Ciudad", eq.ciudad);
+    dato("Club desde", eq.anio);   /* es el año del club, no el del estadio */
+  } else {
+    var ju = eq.jug[c.j];
+    fi.appendChild(el("h3", null, ju.n));
+    dato("Equipo", eq.eq);
+    dato("Puesto", ju.pos);
+    dato("Dorsal", ju.num);
+    dato("País", ju.nac);
+    dato("Estadio", eq.estadio);
+  }
+  caja.appendChild(fi);
+  lupa.classList.add("on");
+}
+function cerrarLupa(){ document.getElementById("lupa").classList.remove("on"); }
+
+/* ---------------- álbum ---------------- */
 function verAlbum(){
   var cont = document.getElementById("aEquipos"); cont.innerHTML = "";
   for(var i=0;i<LIGA.length;i++){
     (function(i){
-      var eq = LIGA[i], n = 0;
-      for(var j=0;j<eq.jug.length;j++) if(S.cromos[claveCromo(i,j)]) n++;
-      var d = el("div","eqc" + (n === eq.jug.length ? " full" : ""));
+      var eq = LIGA[i], lista = cromosDe(i), n = 0;
+      for(var j=0;j<lista.length;j++) if(S.cromos[lista[j].k]) n++;
+      var d = el("div","eqc" + (n === lista.length ? " full" : ""));
       if(eq.escudo){
         var im = document.createElement("img");
         im.src = eq.escudo; im.alt = eq.eq; im.loading = "lazy";
@@ -67,7 +139,10 @@ function verAlbum(){
         d.appendChild(im);
       }
       d.appendChild(el("div","nm", eq.eq));
-      d.appendChild(el("div","pr", n + "/" + eq.jug.length));
+      d.appendChild(el("div","pr", n + "/" + lista.length));
+      var bar = el("div","barr"); var in2 = el("div","in");
+      in2.style.width = Math.round(100*n/lista.length) + "%";
+      bar.appendChild(in2); d.appendChild(bar);
       d.onclick = function(){ verEquipo(i); };
       cont.appendChild(d);
     })(i);
@@ -77,43 +152,47 @@ function verAlbum(){
   go("album");
 }
 function verEquipo(i){
-  var eq = LIGA[i], cont = document.getElementById("eCromos"); cont.innerHTML = "";
+  var eq = LIGA[i], lista = cromosDe(i), cont = document.getElementById("eCromos");
+  cont.innerHTML = "";
   var n = 0;
-  for(var j=0;j<eq.jug.length;j++){
+  for(var j=0;j<lista.length;j++){
     var w = el("div");
-    if(S.cromos[claveCromo(i,j)]){ w.appendChild(nodoCromo(i,j,false)); n++; }
+    if(S.cromos[lista[j].k]){ w.appendChild(nodoCromo(lista[j], false)); n++; }
     else w.appendChild(nodoVacio());
     cont.appendChild(w);
   }
   document.getElementById("eNom").textContent = eq.eq;
-  document.getElementById("ePr").textContent = n + "/" + eq.jug.length;
+  document.getElementById("ePr").textContent = n + "/" + lista.length;
   go("equipo");
 }
 
-/* ---------------- sobre ---------------- */
+/* ---------------- tienda ---------------- */
 var POR_SOBRE = 5, REPE_MONEDAS = 15;
+function irTienda(){
+  document.getElementById("tMon").textContent = S.monedas;
+  var falta = faltantes().length;
+  document.getElementById("tFalta").textContent = falta === 0
+    ? "Tienes el álbum entero." : "Te faltan " + falta + " cromos.";
+  var bs = document.getElementById("tSobre"), bc = document.getElementById("tCromo");
+  bs.querySelector(".precio").textContent = S.eco.sobre + " 🪙";
+  bc.querySelector(".precio").textContent = S.eco.cromo + " 🪙";
+  bs.classList.toggle("no", S.monedas < S.eco.sobre || falta === 0);
+  bc.classList.toggle("no", S.monedas < S.eco.cromo || falta === 0);
+  var av = document.getElementById("tAviso");
+  if(falta === 0) av.textContent = "¡Álbum completo! 🏆";
+  else if(S.monedas < S.eco.sobre) av.textContent = "Te faltan " + (S.eco.sobre - S.monedas) + " 🪙 para el sobre. Juega una ronda más.";
+  else av.textContent = "";
+  go("tienda");
+}
 function irSobre(){
-  document.getElementById("sMon").textContent = S.monedas;
+  /* el botón de la portada entra por la tienda */
+  irTienda();
+}
+function comprarSobre(){
+  if(S.monedas < S.eco.sobre || !faltantes().length) return;
   var z = document.getElementById("sZona"), b = document.getElementById("sBotones");
   z.innerHTML = ""; b.innerHTML = "";
-  var falta = faltantes();
-  if(falta.length === 0){
-    var p = el("div","panel");
-    p.appendChild(el("h2", null, "¡ÁLBUM COMPLETO!"));
-    p.appendChild(el("div","caritas", "🏆"));
-    p.appendChild(el("div", null, "Tienes los " + totalCromos() + " cromos."));
-    z.appendChild(p); go("sobre"); return;
-  }
-  if(S.monedas < S.eco.sobre){
-    var p2 = el("div","panel");
-    p2.appendChild(el("h2", null, "TE FALTAN MONEDAS"));
-    p2.appendChild(el("div","caritas", "🪙"));
-    p2.appendChild(el("div", null, "Un sobre cuesta " + S.eco.sobre + " 🪙 y tienes " + S.monedas + "."));
-    p2.appendChild(el("div","mini", "Juega una ronda más."));
-    z.appendChild(p2);
-    var v = el("button","btn","Ir a jugar"); v.onclick = irHome;
-    b.appendChild(v); go("sobre"); return;
-  }
+  document.getElementById("sMon").textContent = S.monedas;
   var pq = el("div","paquete");
   pq.appendChild(el("div","t", "SOBRE"));
   pq.appendChild(el("div","b", "⚽"));
@@ -127,23 +206,22 @@ function abrirSobre(pq){
   if(S.monedas < S.eco.sobre) return;
   S.monedas -= S.eco.sobre;
   var falta = baraja(faltantes());
-  var todos = [];
-  for(var i=0;i<LIGA.length;i++) for(var j=0;j<LIGA[i].jug.length;j++) todos.push([i,j]);
+  var todos = catalogo();
   var salen = [];
   /* al menos uno nuevo garantizado */
-  if(falta.length) salen.push({p:falta[0], nuevo:true});
+  if(falta.length) salen.push({c:falta[0], nuevo:true});
   var mezcla = baraja(todos);
   var k = 0;
   while(salen.length < POR_SOBRE && k < mezcla.length){
     var p = mezcla[k++];
-    if(salen.some(function(s){ return s.p[0]===p[0] && s.p[1]===p[1]; })) continue;
-    salen.push({p:p, nuevo: !S.cromos[claveCromo(p[0], p[1])]});
+    if(salen.some(function(s){ return s.c.k === p.k; })) continue;
+    salen.push({c:p, nuevo: !S.cromos[p.k]});
   }
   var devuelto = 0;
   for(var i=0;i<salen.length;i++){
-    var s = salen[i], ck = claveCromo(s.p[0], s.p[1]);
-    if(S.cromos[ck]){ s.nuevo = false; devuelto += REPE_MONEDAS; }
-    else { S.cromos[ck] = 1; s.nuevo = true; }
+    var s = salen[i];
+    if(S.cromos[s.c.k]){ s.nuevo = false; devuelto += REPE_MONEDAS; }
+    else { S.cromos[s.c.k] = 1; s.nuevo = true; }
   }
   S.monedas += devuelto;
   guardar();
@@ -158,7 +236,7 @@ function mostrarSobre(salen, devuelto){
     (function(i){
       var s = salen[i], w = el("div");
       w.style.position = "relative";
-      w.appendChild(nodoCromo(s.p[0], s.p[1], s.nuevo));
+      w.appendChild(nodoCromo(s.c, s.nuevo));
       var t = el("div","tag" + (s.nuevo ? "" : " rep"), s.nuevo ? "NUEVO" : "REPE");
       w.appendChild(t);
       g.appendChild(w);
@@ -175,8 +253,80 @@ function mostrarSobre(salen, devuelto){
   document.getElementById("sMon").textContent = S.monedas;
   setTimeout(function(){
     var a = el("button","btn sec","Ver álbum"); a.onclick = verAlbum;
-    var c = el("button","btn","Otro sobre"); c.onclick = irSobre;
-    if(S.monedas < S.eco.sobre) c.disabled = true;
+    var c = el("button","btn","Otra vez"); c.onclick = irTienda;
     b.appendChild(a); b.appendChild(c);
   }, 140 * salen.length + 350);
+}
+
+/* ---------------- comprar un cromo concreto ----------------
+   Más caro que el sobre a propósito: el sobre es la apuesta y esto es el
+   remedio para el cromo que se le resiste. */
+function irElegir(){
+  if(S.monedas < S.eco.cromo) return;
+  var cont = document.getElementById("elEquipos"); cont.innerHTML = "";
+  document.getElementById("elMon").textContent = S.monedas;
+  var hay = false;
+  for(var i=0;i<LIGA.length;i++){
+    (function(i){
+      var falta = cromosDe(i).filter(function(c){ return !S.cromos[c.k]; });
+      if(!falta.length) return;
+      hay = true;
+      var eq = LIGA[i];
+      var d = el("div","eqc");
+      if(eq.escudo){
+        var im = document.createElement("img");
+        im.src = eq.escudo; im.alt = eq.eq; im.loading = "lazy";
+        im.onerror = function(){ this.remove(); };
+        d.appendChild(im);
+      }
+      d.appendChild(el("div","nm", eq.eq));
+      d.appendChild(el("div","pr", "faltan " + falta.length));
+      d.onclick = function(){ elegirDe(i); };
+      cont.appendChild(d);
+    })(i);
+  }
+  document.getElementById("elTit").textContent = "¿De qué equipo?";
+  document.getElementById("elCromos").innerHTML = "";
+  document.getElementById("elVolver").hidden = true;
+  if(!hay) cont.appendChild(el("div","mini","No falta ninguno."));
+  go("elegir");
+}
+function elegirDe(i){
+  var falta = cromosDe(i).filter(function(c){ return !S.cromos[c.k]; });
+  var cont = document.getElementById("elCromos"); cont.innerHTML = "";
+  document.getElementById("elEquipos").innerHTML = "";
+  document.getElementById("elTit").textContent = LIGA[i].eq + " · toca el que quieras";
+  document.getElementById("elVolver").hidden = false;
+  for(var j=0;j<falta.length;j++){
+    (function(c){
+      var w = el("div");
+      var nodo = nodoCromo(c, false);
+      nodo.classList.add("comprable");
+      nodo.onclick = function(){ comprarCromo(c); };
+      w.appendChild(nodo);
+      cont.appendChild(w);
+    })(falta[j]);
+  }
+}
+function comprarCromo(c){
+  if(S.monedas < S.eco.cromo || S.cromos[c.k]) return;
+  var eq = LIGA[c.eq];
+  var nom = c.tipo === "estadio" ? (eq.estadio || eq.eq) : eq.jug[c.j].n;
+  if(!confirm("¿Compramos el cromo de " + nom + " por " + S.eco.cromo + " monedas?")) return;
+  S.monedas -= S.eco.cromo;
+  S.cromos[c.k] = 1;
+  guardar();
+  var z = document.getElementById("sZona"), b = document.getElementById("sBotones");
+  z.innerHTML = ""; b.innerHTML = "";
+  document.getElementById("sMon").textContent = S.monedas;
+  var g = el("div","revel uno");
+  var w = el("div"); w.style.position = "relative";
+  w.appendChild(nodoCromo(c, true));
+  w.appendChild(el("div","tag", "¡TUYO!"));
+  g.appendChild(w); z.appendChild(g);
+  setTimeout(function(){ w.classList.add("va"); }, 60);
+  var a = el("button","btn sec","Ver álbum"); a.onclick = verAlbum;
+  var t = el("button","btn","A la tienda"); t.onclick = irTienda;
+  b.appendChild(a); b.appendChild(t);
+  go("sobre");
 }

@@ -6,8 +6,9 @@ function pintarHome(){
   var c = document.getElementById("hBloques"); c.innerHTML = "";
   for(var k in BLOQUES){
     (function(k){
+      if(!S.activo[k]) return;      /* lo apagado no se ve: no hay botón muerto que tocar */
       var B = BLOQUES[k];
-      var b = el("button","bq" + (S.activo[k] ? "" : " off"));
+      var b = el("button","bq");
       b.style.setProperty("--c1", B.c1); b.style.setProperty("--c2", B.c2);
       b.appendChild(el("div","ic", B.ic));
       b.appendChild(el("div","nm", B.nm));
@@ -19,7 +20,8 @@ function pintarHome(){
   document.getElementById("hAlb").textContent = " " + tengoCromos() + "/" + totalCromos();
   var sb = document.getElementById("hSobre");
   sb.disabled = S.monedas < S.eco.sobre;
-  sb.textContent = "✨ ABRIR SOBRE · " + S.eco.sobre + " 🪙";
+  sb.textContent = S.monedas >= S.eco.sobre ? "✨ TIENDA · ¡PUEDES COMPRAR!"
+                                            : "✨ TIENDA · " + S.eco.sobre + " 🪙";
 }
 
 /* ---------------- panel de papá ---------------- */
@@ -33,7 +35,7 @@ function verPapa(){
   var c = document.getElementById("ppBloques"); c.innerHTML = "";
   for(var k in BLOQUES){
     (function(k){
-      var f = el("div","fila2");
+      var f = el("div","fila2 bl");
       var sw = el("div","sw" + (S.activo[k] ? " on" : ""));
       sw.onclick = function(){
         var n = 0; for(var q in S.activo) if(S.activo[q]) n++;
@@ -41,15 +43,20 @@ function verPapa(){
         S.activo[k] = !S.activo[k]; sw.classList.toggle("on"); guardar();
       };
       f.appendChild(sw);
-      f.appendChild(el("span","nm", BLOQUES[k].nm));
+      var col = el("div","col");
+      col.appendChild(el("span","nm", BLOQUES[k].nm));
+      var etq = el("span","lvnm", NIVELES[S.nivel[k]] + " · " + itemsDe(k).length + " sitios");
+      col.appendChild(etq);
+      f.appendChild(col);
       var seg = el("div","seg");
-      for(var lv = 1; lv <= 3; lv++){
+      for(var lv = 1; lv <= MAXLV; lv++){
         (function(lv){
-          var bt = el("button", S.nivel[k] === lv ? "on" : "", NIVELES[lv]);
+          var bt = el("button", S.nivel[k] === lv ? "on" : "", String(lv));
           bt.onclick = function(){
             S.nivel[k] = lv; guardar();
             var hs = seg.querySelectorAll("button");
             for(var i = 0; i < hs.length; i++) hs[i].className = (i + 1 === lv) ? "on" : "";
+            etq.textContent = NIVELES[lv] + " · " + itemsDe(k).length + " sitios";
             statsPapa();
           };
           seg.appendChild(bt);
@@ -61,6 +68,7 @@ function verPapa(){
   }
   document.getElementById("ppAcierto").value = S.eco.acierto;
   document.getElementById("ppSobre").value = S.eco.sobre;
+  document.getElementById("ppCromo").value = S.eco.cromo;
   var sh = document.getElementById("ppShare");
   if(sh) sh.hidden = !navigator.share;
   document.getElementById("ppTxt").hidden = true;
@@ -72,8 +80,10 @@ function verPapa(){
 function setEco(){
   var a = parseInt(document.getElementById("ppAcierto").value, 10);
   var s = parseInt(document.getElementById("ppSobre").value, 10);
+  var k = parseInt(document.getElementById("ppCromo").value, 10);
   if(a > 0) S.eco.acierto = a;
   if(s > 0) S.eco.sobre = s;
+  if(k > 0) S.eco.cromo = k;
   guardar(); statsPapa();
 }
 function statsPapa(){
@@ -170,7 +180,7 @@ function aplicarCopia(d){
   }
   if(!confirm("La copia trae:\n\n" + resumen(d) + "\n\nAhora mismo hay:\n\n" + resumen(S) +
               "\n\n¿Sustituimos el progreso de Nil por el de la copia?")) return false;
-  S = d; cargar2(); guardar(); pintarHome(); verPapa();
+  S = d; completar(); migrar(); guardar(); pintarHome(); verPapa();
   aviso("Restaurado: " + resumen(S), true);
   return true;
 }
@@ -190,14 +200,6 @@ function importar(inp){
   };
   fr.onerror = function(){ aviso("No se ha podido leer el fichero.", false); };
   fr.readAsText(f);
-}
-function cargar2(){
-  var base = estadoNuevo();
-  for(var k in base) if(!(k in S)) S[k] = base[k];
-  for(var b in BLOQUES){
-    if(!(b in S.nivel)) S.nivel[b] = 1;
-    if(!(b in S.activo)) S.activo[b] = true;
-  }
 }
 function borrarTodo(){
   if(!confirm("¿Borrar TODO el progreso de Nil? No se puede deshacer.")) return;

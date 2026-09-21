@@ -5,7 +5,7 @@ function nuevaRonda(bloque){
   var pool = itemsDe(bloque);
   if(pool.length < 3){ alert("Ese bloque no tiene bastantes sitios en este nivel."); return; }
   var cola = [];
-  while(cola.length < 10){                 /* en fácil hay menos de 10 sitios: se repiten */
+  while(cola.length < 10){                 /* en los primeros niveles hay menos de 10 sitios: se repiten */
     var v = baraja(pool);
     for(var i=0;i<v.length && cola.length<10;i++){
       if(cola.length && cola[cola.length-1].id === v[i].id) continue;
@@ -41,12 +41,18 @@ function pregunta(){
   document.getElementById("jQ").innerHTML = t.q;
   document.getElementById("jSub").textContent = t.sub;
   document.getElementById("jMon").textContent = S.monedas;
-  var b = document.getElementById("jBarra"); b.innerHTML = "";
+  /* la bandera acompaña a la pregunta: no dice dónde está, pero va pegando
+     la comunidad a su bandera sin tener que estudiarla aparte */
+  var bw = document.getElementById("jBand");
+  bw.innerHTML = "";
+  var bid = banderaDe(it);
+  if(bid){ var b = bandera(bid, "bandera mini"); if(b) bw.appendChild(b); }
+  var b2 = document.getElementById("jBarra"); b2.innerHTML = "";
   for(var i=0;i<R.cola.length;i++){
     var p = el("div","pip");
     if(i < R.i) p.classList.add(R.cola[i].acerto ? "ok" : "ko");
     else if(i === R.i) p.classList.add("now");
-    b.appendChild(p);
+    b2.appendChild(p);
   }
   R.bloqueado = false;
 }
@@ -59,6 +65,18 @@ function marcar(key, color, ancho){
   if(ancho && hijo.getAttribute("stroke-width")) hijo.setAttribute("stroke-width", ancho);
   n.classList.add("flash-ok");
 }
+/* Premio al acertar: la bandera sale grande un momento sobre el mapa. */
+function premioBandera(it){
+  var bid = banderaDe(it);
+  if(!bid) return;
+  var b = bandera(bid, "bandera");
+  if(!b) return;
+  var w = el("div","premio");
+  w.appendChild(b);
+  w.appendChild(el("div","nm", it.tipo === "capital" ? it.ref.ccaaNom : it.n));
+  document.getElementById("jMapa").appendChild(w);
+  setTimeout(function(){ if(w.parentNode) w.parentNode.removeChild(w); }, 1250);
+}
 function responder(key){
   if(R.bloqueado) return;
   R.bloqueado = true;
@@ -70,6 +88,7 @@ function responder(key){
     st.ok++; R.ok++;
     var g = S.eco.acierto; R.monedas += g; S.monedas += g;
     marcar(it.id, "#2e9e5b", 6);
+    premioBandera(it);
   }else{
     st.ko++;
     marcar(key, "#c0392b", 6);
@@ -79,8 +98,10 @@ function responder(key){
     document.getElementById("jSub").textContent = "Aquí está " + (it.art ? it.art + " " : "") + it.n;
   }
   guardar();
-  document.getElementById("jMon").textContent = S.monedas;
-  setTimeout(function(){ R.i++; pintarMapa(); pregunta(); }, bien ? 900 : 1900);
+  var mon = document.getElementById("jMon");
+  mon.textContent = S.monedas;
+  if(bien){ mon.classList.remove("sube"); void mon.offsetWidth; mon.classList.add("sube"); }
+  setTimeout(function(){ R.i++; pintarMapa(); pregunta(); }, bien ? 1400 : 1900);   /* con premio de bandera hace falta un pelín más */
 }
 function salirRonda(){ R = null; irHome(); }
 function otraRonda(){ nuevaRonda(R.bloque); }
@@ -98,5 +119,10 @@ function finRonda(){
   document.getElementById("fRes").textContent = "Has acertado " + R.ok + " de " + R.cola.length;
   document.getElementById("fMon").textContent = R.monedas + extra;
   document.getElementById("fBonus").textContent = bonus;
+  /* cuánto le falta para el próximo sobre, que es lo que de verdad le importa */
+  var falta = Math.max(0, S.eco.sobre - S.monedas);
+  var fs = document.getElementById("fSobre");
+  fs.textContent = falta === 0 ? "¡Ya puedes abrir un sobre!" : "Te faltan " + falta + " 🪙 para el sobre";
+  fs.className = "mini" + (falta === 0 ? " listo" : "");
   go("fin");
 }
