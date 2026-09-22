@@ -85,6 +85,36 @@ Editar la app = editar `datos/tpl_*.html` y volver a correr `build.py`.
   europeo de Natural Earth): 33 ríos españoles con nombre, un fichero, sin rate limit.
   El global `ne_10m_rivers_lake_centerlines` solo traía 8.
 
+## Modo APRENDER (2026-09-22)
+Sección aparte del juego: **sin preguntas, sin monedas y sin fallos**. Se toca cualquier
+cosa del mapa (o se busca en la lista de abajo) y sale su ficha: bandera, fotos, dos o tres
+frases para leerle en voz alta, un «¿Sabías que...?» y un mini-mapa de dónde cae.
+**109 fichas**: 19 comunidades, 20 capitales, 23 ríos, 6 montañas, 20 ciudades, 21 mares e islas.
+
+- Contenido a mano en `datos/atlas_datos.py` (texto y qué sitios fotografiar).
+- `datos/atlas.py` baja las fotos de Wikipedia -> `img/` + `out_atlas.json`.
+- `datos/optimizar.py` las aprieta con `sips` (nativo de macOS): 33 MB -> 7,5 MB.
+- El mapa se comparte con el juego: `dibujarMapa(bloque, activos, {nivel, alTocar})`.
+
+### Gotchas de las fotos (caros, todos)
+- **La imagen principal de Wikipedia para una comunidad o ciudad es el ESCUDO, la BANDERA
+  o el mapa de situación.** `prop=pageimages` devuelve la imagen de la ficha lateral. La vía
+  buena es `page/media-list`, que las da EN EL ORDEN DEL ARTÍCULO: las fotos van detrás.
+- **Hay banderas y escudos servidos como .jpg**, con nombre inocente y sin categoría de
+  Commons que los delate. Ni el nombre ni las categorías bastan: **el peso sí**. Una bandera
+  son colores planos y comprime a 8-15 KB; una foto no baja de 25 KB al mismo ancho
+  (`MIN_KB`). Se descarga el candidato, se pesa, y si es un símbolo se prueba el siguiente.
+- **`media-list` devuelve HTTP 500** en algunos artículos (Guggenheim, Catedral de Murcia):
+  hay respaldo con `prop=images` y, si tampoco, se cambia el título en `atlas_datos.py`.
+- **La caché del descargador iba por nombre LOCAL** (`cap-barcelona-1.jpg`): si el script
+  elegía otra foto, el nombre no cambiaba y se quedaba la vieja en disco mientras el JSON
+  decía otra cosa. Por eso cada foto guarda `src` (su fichero en Commons) y se compara.
+- **En zsh, `rm -f img/*.jpg img/*.png` NO BORRA NADA si uno de los dos patrones no casa**
+  ("no matches found" aborta el comando entero, y `2>/dev/null` solo silencia el aviso).
+  Usar `find img -type f -delete`. Costó tres rondas de revisión mirando fotos viejas.
+- Las fotos son de Commons y el repo es público: cada una guarda autor y licencia, y la
+  ficha los muestra en pequeño.
+
 ## Pendiente
 - **Llobregat, Ter, Jarama y Gállego**: no están en Natural Earth y Overpass no respondió.
   `python3 ov3.py Llobregat Ter Jarama Gallego` es reanudable; después `rios_add.py` y

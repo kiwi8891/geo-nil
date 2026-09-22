@@ -48,11 +48,17 @@ if sinac: print("!! nacionalidades sin traducir:", sinac)
 
 J=lambda o: json.dumps(o,ensure_ascii=False,separators=(",",":"))
 html="".join(open(f).read() for f in
-  ["tpl_head.html","tpl_body.html","tpl_js1.html","tpl_js2.html","tpl_js3.html","tpl_js4.html","tpl_js5.html"])
+  ["tpl_head.html","tpl_body.html","tpl_js1.html","tpl_js2.html","tpl_js3.html","tpl_js4.html",
+   "tpl_js6.html","tpl_js5.html"])   # js5 cierra el <script>, va siempre el último
 banderas=json.load(open("out_banderas.json"))
+# El atlas del modo aprender: las claves llevan el prefijo del tipo ("ccaa:galicia")
+# porque "murcia" es a la vez comunidad, capital y ciudad.
+atlas_raw=json.load(open("out_atlas.json")) if os.path.exists("out_atlas.json") else {}
+atlas={(k if ":" in k else "ccaa:"+k):v for k,v in atlas_raw.items()}
 html=(html.replace("/*__MAPA__*/",J(mapa)).replace("/*__LIGA__*/",J(liga))
-          .replace("/*__BANDERAS__*/",J(banderas)))
-for hueco in ("/*__MAPA__*/","/*__LIGA__*/","/*__BANDERAS__*/"):
+          .replace("/*__BANDERAS__*/",J(banderas))
+          .replace("/*__ATLAS__*/",J(atlas)))
+for hueco in ("/*__MAPA__*/","/*__LIGA__*/","/*__BANDERAS__*/","/*__ATLAS__*/"):
     assert hueco not in html, "hueco sin rellenar: "+hueco
 open(os.path.join(P,"index.html"),"w").write(html)
 
@@ -66,7 +72,8 @@ cromos = sum(len(e["jug"]) for e in liga) + len(liga)     # +1 cromo de estadio 
 print(f"index.html {kb:.0f} KB | equipos {len(liga)} | cromos {cromos}"
       f" (jugadores {sum(len(e['jug']) for e in liga)} + estadios {len(liga)})"
       f" | con foto {sum(1 for e in liga for j in e['jug'] if j['img'])}"
-      f" | banderas {len(banderas)}")
+      f" | banderas {len(banderas)} | fichas de atlas {len(atlas)}"
+      f" ({sum(len(v['fotos']) for v in atlas.values())} fotos)")
 sin_est = [e["eq"] for e in liga if not e["estadio"]]
 if sin_est: print("!! equipos sin estadio:", ", ".join(sin_est))
 print("equipos:", ", ".join(e["eq"] for e in liga))

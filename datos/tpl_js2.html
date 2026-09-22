@@ -5,9 +5,12 @@
 var HIT = {1:{rio:28, pin:32}, 2:{rio:24, pin:28}, 3:{rio:19, pin:24},
            4:{rio:15, pin:20}, 5:{rio:12, pin:16}};
 
-function dibujarMapa(bloque, activos){
-  /* activos = ids (tipo:id) que son tocables esta ronda */
-  var lv = S.nivel[bloque];
+function dibujarMapa(bloque, activos, op){
+  /* activos = ids (tipo:id) que son tocables esta ronda.
+     op.nivel fuerza qué se dibuja (el modo aprender lo enseña todo) y
+     op.alTocar cambia qué pasa al tocar (allí no se responde, se abre la ficha). */
+  op = op || {};
+  var lv = op.nivel || S.nivel[bloque];
   var h = HIT[lv] || HIT[5];
   var NS = "http://www.w3.org/2000/svg";
   var svg = document.createElementNS(NS,"svg");
@@ -148,9 +151,10 @@ function dibujarMapa(bloque, activos){
       }
     }
   }
+  var alTocar = op.alTocar || responder;
   hits.addEventListener("click", function(ev){
     var k = ev.target && ev.target.dataset ? ev.target.dataset.k : null;
-    if(k) responder(k);
+    if(k) alTocar(k);
   });
   return {svg:svg, refs:refs};
 }

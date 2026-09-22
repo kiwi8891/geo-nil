@@ -9,6 +9,7 @@
   <div class="cover"><h1>GEO NIL</h1><p>Mapas de España</p></div>
   <div class="bloques" id="hBloques"></div>
   <div class="fila">
+    <button class="btn sec" onclick="irAprende()">🔍 APRENDER</button>
     <button class="btn sec" onclick="verAlbum()">📕 MI ÁLBUM <span id="hAlb" class="mini"></span></button>
     <button class="btn" id="hSobre" onclick="irTienda()">✨ TIENDA</button>
   </div>
@@ -126,6 +127,23 @@
     <div class="fila" id="sBotones" style="padding:0"></div>
   </div>
 </section>
+
+<!-- ============ APRENDER (sin preguntas ni monedas) ============ -->
+<section id="aprende" class="scr">
+  <div class="top">
+    <button class="btn sec sm" onclick="irHome()">‹ Inicio</button>
+    <div class="pestanas" id="apPestanas"></div>
+  </div>
+  <div class="apcuerpo">
+    <div class="mapwrap" id="apMapa"></div>
+    <div class="aplista" id="apLista"></div>
+  </div>
+</section>
+
+<!-- ============ FICHA DE UN SITIO ============ -->
+<div id="ficha" onclick="cerrarFicha(event)">
+  <div class="fichacaja" id="fichaCaja"></div>
+</div>
 
 <!-- ============ CROMO GRANDE ============ -->
 <div id="lupa" onclick="cerrarLupa()">
