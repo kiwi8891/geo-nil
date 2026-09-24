@@ -1,5 +1,3 @@
 __pycache__/
 *.pyc
-ne_10m_rivers_europe.*
-osm_rios2.json
 progress.json.bak*
