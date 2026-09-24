@@ -9,6 +9,35 @@ App hermana de `LEER_ESCRIBIR`. Mismo niño (6 años), mismo iPad, mismo patrón
 
 ---
 
+## 0. Estado a 2026-09-22 (leer esto primero)
+
+Lo de abajo es el diseño original de la v1 y se conserva como registro de por qué
+se decidió cada cosa. Lo que ha cambiado desde entonces:
+
+| | v1 (2026-09-15) | Ahora |
+|---|---|---|
+| Bloques | 4 (capitales dentro de CCAA) | **5**: las capitales tienen el suyo |
+| Niveles | 3 | **5**, con tablas en `datos/niveles.py` |
+| Ríos | 12 | **23** |
+| Equipos / cromos | 16 / 160 | **20 / 253** (233 jugadores + 20 estadios) |
+| Tienda | solo sobre (200) | sobre **o** elegir cromo concreto (500) |
+| Banderas CCAA | no había | las 19, como pista y premio |
+| Cromos | tamaño fijo | **se amplían** con su ficha |
+| Modo aprender | no había | **109 fichas** con fotos, sin examen |
+
+**Modo APRENDER (pedido por Ger el 2026-09-22).** Sección aparte, **sin preguntas, sin
+monedas y sin fallos**: es para que padre e hijo miren cosas juntos, no para medir. Se toca
+cualquier cosa del mapa (o se busca en la lista) y sale su ficha: bandera, fotos de sitios de
+verdad, dos o tres frases escritas para leerle en voz alta, un «¿Sabías que...?» y un
+mini-mapa de dónde cae. Cubre los cinco bloques: 19 comunidades, 20 capitales, 23 ríos,
+6 montañas, 20 ciudades y 21 mares e islas.
+
+Las 168 fotos son de Wikimedia Commons, viven en `img/` (7,5 MB, con autor y licencia) y el
+contenido de las fichas está escrito a mano en `datos/atlas_datos.py`. Los gotchas de bajarlas
+están en el `CLAUDE.md` del proyecto: son varios y caros.
+
+---
+
 ## 1. Principios que no se cambian sin preguntar
 
 - **Se toca el mapa.** La pregunta es «toca el EBRO» y Nil toca el río en el mapa SVG.
@@ -116,8 +145,15 @@ de **abrir el sobre como el momento fuerte** de la app. El mapa es una página m
 
 ## 10. Abierto / pendiente
 
-- Overpass para los 5 ríos que faltan.
-- Trazar a mano Sistema Central y Sistema Ibérico.
-- Precio del sobre (200) y monedas por acierto (10) están sin calibrar con uso real.
-  La bitácora de uso es la fuente de verdad, igual que en LEER_ESCRIBIR.
-- Europa y Mundo: fuera de v1.
+- **Probarlo con Nil delante.** Nada de esto se ha visto con el niño todavía, y es la
+  única prueba que cuenta.
+- **Añadirlo a la pantalla de inicio del iPad** (si no, Safari borra el progreso a los ~7 días).
+- **Llobregat, Ter, Jarama y Gállego**: no están en Natural Earth y Overpass no respondió en
+  media hora. `datos/ov3.py` es reanudable; después `rios_add.py` y `niveles.py`.
+- Precio del sobre (200), del cromo suelto (500) y monedas por acierto (10) siguen **sin
+  calibrar con uso real**. La bitácora de uso es la fuente de verdad, igual que en LEER_ESCRIBIR.
+- Europa y Mundo: siguen fuera.
+
+### Resuelto desde la v1
+- Los 5 ríos que faltaban y 11 más: ya están (23 en total).
+- Sistema Central e Ibérico: trazados a mano, siguen siendo aproximados.
